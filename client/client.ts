@@ -175,7 +175,7 @@ const depositQueue = [
   () => new Promise((resolve) => depositTokens(1000).then(resolve)), // KGEN Airdrop $3.54
   () => new Promise((resolve) => depositTokens(1500, 500).then(resolve)), // Lambo eligability
   () => new Promise((resolve) => withdrawTokens(500, 3000).then(resolve)),
-  () => new Promise((resolve) => depositTokens(123_458, 10000).then(resolve)), // Super chad member
+  // () => new Promise((resolve) => depositTokens(123_458, 10000).then(resolve)), // Super chad member
   // () => new Promise((resolve) => depositTokens(2_007_824).then(resolve)), // Mega chad member
   // () => new Promise((resolve) => depositTokens(3_720_345).then(resolve)), // Giga chad member
 ];
@@ -219,9 +219,12 @@ console.log(
   "     > Matured    :",
   memberState.totalMatured.div(decimalFactor).toString()
 );
-console.log("     > Pending    :", "Not set");
+console.log(
+  "     > Pending    :",
+  memberState.totalPending.div(decimalFactor).toString()
+);
 console.log("     > Available  :", "Not set");
-console.log("     > Entries    :", memberState.totalVouchers.toString());
+console.log("     > Entries    :", memberState.totalEntries.toString());
 console.log("     > Slots      :", memberState.slots.length);
 console.log("  | Vault account :", vaultTokenAccount.toBase58());
 console.log("     > Amount     :", vaultAccount.amount);

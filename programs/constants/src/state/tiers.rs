@@ -34,10 +34,10 @@ impl MemberTier {
     pub fn required_tokens(&self) -> u64 {
         match self {
             MemberTier::Pending => 1,
-            MemberTier::Virgin => 3_000_000_000_000, // $7.50 USD @ 1.5MCAP
-            MemberTier::Super => 100_000_000_000_000, // $250 USD
-            MemberTier::Mega => 2_000_000_000_000_000, // $5000 USD
-            MemberTier::Giga => 5_000_000_000_000_000, // $12,000 USD
+            MemberTier::Virgin => 3_000_000_000_000, // 3000 $7.50 USD @ 1.5MCAP
+            MemberTier::Super => 100_000_000_000_000, // 100K $250 USD
+            MemberTier::Mega => 2_000_000_000_000_000, // 2M $5000 USD
+            MemberTier::Giga => 5_000_000_000_000_000, // 5M $12,000 USD
         }
     }
 

@@ -151,8 +151,13 @@ mod subscription {
         // Update pool attributes
         let rewards = member.on_withdraw(amount, time_now as u64).unwrap();
         member.grant_rewards(rewards);
-        // Update stake system balance
-        // stake_system.on_deposit(amount);
+
+        ctx.accounts.member_account.realloc(
+            &ctx.accounts.member_account.to_account_info(),
+            &ctx.accounts.signer.to_account_info(),
+            &ctx.accounts.system_program.to_account_info(),
+        );
+
         sol_log_compute_units();
         Ok(())
     }

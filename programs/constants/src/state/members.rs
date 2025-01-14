@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction::*};
-use crate::{constants::*, errors::*, slots::LockedSlot, status::AccountStatus, tiers::MemberTier};
+use crate::{
+    constants::*, errors::*, slots::Transaction, status::AccountStatus, tiers::MemberTier,
+};
 use solana_program::program_pack::IsInitialized;
 
 #[account]
@@ -14,16 +16,16 @@ pub struct MemberAccount {
     pub total_amount: u64,
     /** Amount of tokens passed their first epoch */
     pub total_matured: u64,
-    /** Amount of unlocked token liquidity */
-    pub total_liquidity: u64,
+    /** Amount of tokens pending release */
+    pub total_pending: u64,
     /** Persists the total amount of vouchers accrued minus redeemed */
-    pub total_vouchers: u64,
+    pub total_entries: u64,
     /** Initial creation date of the members account */
     pub time_created: u64,
     /** Date of the last reward granted to matured tokens */
     pub time_rewarded: u64,
     /** Collection of locked token deposit slots (one entry per deposit) */
-    pub slots: Vec<LockedSlot>,
+    pub slots: Vec<Transaction>,
 }
 
 #[constant]
@@ -46,6 +48,8 @@ impl MemberAccount {
         let mut rewards: u64 = self.get_unclaimed_rewards(time_now);
         // Mature existing slots and collect rewards
         rewards += tokens_to_vouchers(self.mature_slots(time_now));
+
+        // TODO: Fetch the released count if the epoch has lapsed and release
         // Update the reward timestamp
         self.time_rewarded = time_now;
         // Return outstanding rewards
@@ -64,7 +68,11 @@ impl MemberAccount {
         );
         // Claim outstanding rewards prior to everything
         let mut rewards: u64 = self.on_claim(time_now).unwrap();
-        let new_slot = LockedSlot::new(amount, time_now);
+        let new_slot = Transaction::Deposit {
+            amount: amount,
+            time_created: time_now,
+            time_matured: time_now + MATURATION_PERIOD,
+        };
         // TODO: Compress slots
         // Append the new locked slot if it can't be compress
         self.slots.push(new_slot);
@@ -85,9 +93,16 @@ impl MemberAccount {
             self.total_matured >= amount,
             TransferError::InsufficientBalance
         );
-        // Update total amounts
-        self.total_amount -= amount;
+        // Create a pending withdrawal transaction
+        let withdrawal = Transaction::Withdraw {
+            amount: amount,
+            time_released: time_now + MATURATION_PERIOD,
+        };
+        // Append the new locked slot if it can't be compress
+        self.slots.push(withdrawal);
+        // We shift balance from locked to liquidity
         self.total_matured -= amount;
+        self.total_pending += amount;
         // Update member tier for new balance
         self.tier = MemberTier::from_tier(MemberTier::get_tier(self.total_amount));
         // Return outstanding rewards
@@ -126,16 +141,39 @@ impl MemberAccount {
 
     pub fn mature_slots(&mut self, time_now: u64) -> u64 {
         let mut matured_change: u64 = 0;
+        let mut matured_rewards: u64 = 0;
+        let mut released_change: u64 = 0;
         // Cleanup matured slots and capture amount
-        self.slots.retain(|slot: &LockedSlot| {
+        self.slots.retain(|slot: &Transaction| {
             if slot.is_matured(time_now) {
-                // TODO: Determine epochs passed since
-                matured_change += slot.amount;
+                match slot {
+                    Transaction::Deposit {
+                        amount,
+                        time_created,
+                        time_matured,
+                    } => {
+                        // let epoch_length: u64 = time_matured - time_created;
+                        // let outstanding_cycles: u64 = (time_now - time_matured) / epoch_length;
+                        // matured_rewards += outstanding_cycles * amount;
+                        matured_change += amount;
+                    }
+                    Transaction::Withdraw {
+                        amount,
+                        time_released,
+                    } => {
+                        released_change += amount;
+                    }
+                }
+
                 false
             } else {
                 true
             }
         });
+
+        msg!("Matured rewards {}", matured_rewards);
+        msg!("Release {} tokens", released_change);
+        msg!("Matured {} tokens", matured_change);
         // Update total matured balance
         self.total_matured += matured_change;
         matured_change
@@ -159,7 +197,7 @@ impl MemberAccount {
             }
             AccountStatus::Pending => {
                 self.status = AccountStatus::Active.to_u8();
-                self.total_vouchers += amount + Self::ACTIVATION_REWARD;
+                self.total_entries += amount + Self::ACTIVATION_REWARD;
                 msg!(
                     "Rewarded {} vouchers with {} activation reward",
                     amount,
@@ -168,7 +206,7 @@ impl MemberAccount {
                 Ok(())
             }
             AccountStatus::Active | AccountStatus::Paused => {
-                self.total_vouchers += amount;
+                self.total_entries += amount;
                 msg!("Rewarded {} vouchers", amount);
                 Ok(())
             }
@@ -207,7 +245,7 @@ impl MemberAccount {
         ANCHOR_DISCRIMINATOR_SIZE
             + std::mem::size_of::<MemberAccount>()
             + ANCHOR_VECTOR_SIZE
-            + (std::mem::size_of::<LockedSlot>() * total_slots)
+            + (std::mem::size_of::<Transaction>() * total_slots)
     }
 }
 
@@ -225,8 +263,8 @@ impl Default for MemberAccount {
             tier: MemberTier::from_tier(MemberTier::Pending),
             total_amount: 0,
             total_matured: 0,
-            total_liquidity: 0,
-            total_vouchers: 0,
+            total_pending: 0,
+            total_entries: 0,
             time_created: 0,
             time_rewarded: 0,
             slots: Vec::new(),

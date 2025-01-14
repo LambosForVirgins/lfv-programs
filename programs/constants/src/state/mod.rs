@@ -3,11 +3,13 @@ use anchor_lang::{
 };
 use anchor_spl::token::spl_token;
 
+pub use host::*;
 pub use members::*;
 pub use slots::*;
 pub use status::*;
 pub use tiers::*;
 
+pub mod host;
 pub mod members;
 pub mod slots;
 pub mod status;
