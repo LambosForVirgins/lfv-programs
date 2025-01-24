@@ -8,7 +8,8 @@
     "@solana/spl-token": "0.4.3",
     "@solana/web3.js": "1.78.4",
     "assert": "*",
-    "bn.js": "*"
+    "bn.js": "*",
+    "@metaplex-foundation/mpl-token-metadata": "2.13.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.1",

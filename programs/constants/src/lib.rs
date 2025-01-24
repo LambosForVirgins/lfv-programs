@@ -4,18 +4,20 @@ use anchor_lang::solana_program::{
 };
 use anchor_spl::{
     associated_token::get_associated_token_address,
-    token::{TokenAccount, Transfer},
+    token::{self, TokenAccount, Transfer},
 };
 
 use constants::*;
 use errors::*;
 use instructions::*;
+use macros::*;
 use state::*;
 use utils::*;
 
 pub mod constants;
 pub mod errors;
 pub mod instructions;
+pub mod macros;
 pub mod state;
 pub mod utils;
 
@@ -25,7 +27,7 @@ declare_id!("5FMGC6UGHY62NsitCmbkqwn5hJ7533mGRoxogf8JU8sM");
 mod reward_program {
     use super::*;
 
-    pub fn initialize(ctx: Context<InitializeAccounts>) -> Result<()> {
+    pub fn create_account(ctx: Context<InitializeAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         // Validate time before reassinging to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
@@ -93,7 +95,7 @@ mod reward_program {
         let rewards = subscription.on_claim(time_now as u64).unwrap();
         // subscription.grant_rewards(rewards);
         // Mint reward tokens to the member's associated token account
-        // token::mint_to(ctx.accounts.initialize_mint_context(), amount)?;
+        // token::mint_to(ctx.accounts.initialize_mint_context(), 10)?;
 
         msg!("Rewarded {} entries", rewards);
         sol_log_compute_units();

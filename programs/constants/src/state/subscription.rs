@@ -1,18 +1,18 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction::*};
 use crate::{
-    constants::*, errors::*, slots::Transaction, status::AccountStatus, tiers::MemberTier,
+    constants::*, errors::*, slots::Transaction, status::AccountStatus, tiers::MemberTier, utils::*,
 };
 use solana_program::program_pack::IsInitialized;
 
 #[account]
 pub struct SubscriptionAccount {
-    // Rename to SubscriptionAccount
     /** Schema version from v0 up to v255. Defaults to the `LATEST_VERSION` constant. */
     pub version: u8,
     /** Persists the tier of the greatest filled subscription slot */
     pub tier: u8,
     pub status: u8,
+    pub entries: u64,
     /** Total amount of tokens managed by the account */
     pub total_amount: u64,
     /** Amount of tokens passed their first epoch */
@@ -62,7 +62,7 @@ impl SubscriptionAccount {
         // Append the new locked slot if it can't be compress
         self.slots.push(new_slot);
 
-        rewards += tokens_to_vouchers(amount);
+        rewards += lamports_to_rewards(amount);
         // Return outstanding rewards
         Ok(rewards)
     }
@@ -172,42 +172,18 @@ impl SubscriptionAccount {
             self.total_amount - self.total_released,
         ));
 
-        tokens_to_vouchers(matured_rewards)
+        lamports_to_rewards(matured_rewards)
     }
 
     fn get_unclaimed_rewards(&self, time_now: u64) -> u64 {
         let total_epochs: u64 = self.get_unclaimed_epochs(time_now);
-        tokens_to_vouchers(self.total_matured * total_epochs)
+        lamports_to_rewards(self.total_matured * total_epochs)
     }
 
     fn get_unclaimed_epochs(&self, time_now: u64) -> u64 {
         let time_elapsed: u64 = time_now - self.time_rewarded;
         return time_elapsed / MATURATION_PERIOD;
     }
-
-    // pub fn grant_rewards(&mut self, amount: u64) -> Result<()> {
-    //     let status: AccountStatus = AccountStatus::from_u8(self.status);
-    //     match status {
-    //         AccountStatus::Excluded | AccountStatus::Suspended => {
-    //             Err(LockingError::RewardsForbidden.into())
-    //         }
-    //         AccountStatus::Pending => {
-    //             self.status = AccountStatus::Active.to_u8();
-    //             self.total_entries += amount + ACTIVATION_REWARD;
-    //             msg!(
-    //                 "Rewarded {} vouchers with {} signup bonus",
-    //                 amount,
-    //                 ACTIVATION_REWARD
-    //             );
-    //             Ok(())
-    //         }
-    //         AccountStatus::Active | AccountStatus::Paused => {
-    //             self.total_entries += amount;
-    //             msg!("Rewarded {} vouchers", amount);
-    //             Ok(())
-    //         }
-    //     }
-    // }
 
     /**
      Updates the account status when current status
@@ -248,6 +224,7 @@ impl Default for SubscriptionAccount {
             version: Self::LATEST_VERSION,
             tier: MemberTier::from_tier(MemberTier::Pending),
             status: AccountStatus::Pending.to_u8(),
+            entries: 0,
             total_amount: 0,
             total_matured: 0,
             total_released: 0,

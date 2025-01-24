@@ -10,7 +10,7 @@ const MONTHLY: u64 = 31557600 / 12;
 
 const QUARTER_DAY: u64 = 86400 / 4;
 
-const TESTING_PERIOD: u64 = 5;
+const TESTING_PERIOD: u64 = 600;
 /** Monthly slot locking period */
 pub const MATURATION_PERIOD: u64 = TESTING_PERIOD;
 /** Ratio of entries granted to amount locked */
@@ -23,11 +23,3 @@ pub const SUBSCRIPTION_SEED_PREFIX: &'static [u8] = b"subscription";
 pub const VAULT_SEED_PREFIX: &'static [u8] = b"vault";
 
 pub const REWARDS_SEED_PREFIX: &'static [u8] = b"reward";
-
-pub const fn lamports_to_sol(lamports: u64) -> u64 {
-    lamports / 1_000_000_000
-}
-
-pub const fn tokens_to_vouchers(lamports: u64) -> u64 {
-    lamports_to_sol(lamports) / REWARD_FACTOR
-}

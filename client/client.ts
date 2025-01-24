@@ -18,6 +18,9 @@ const program = anchor.workspace.Constants as anchor.Program<Constants>;
 const DECIMALS = 9;
 const MINT_BALANCE = 15_050_542;
 const META_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+const rewardMint = new web3.PublicKey(
+  "CoiNPkhS1a3RWpd6DELx2h4CSWkp489yb3s4KhDdzS8"
+);
 // Account seeds
 enum Seed {
   SubscriptionAccount = "subscription",
@@ -99,8 +102,7 @@ const memberWallet = new web3.Keypair(),
   amount = new BN(MINT_BALANCE).mul(decimalFactor),
   mint = pg.wallets.lfv.keypair.publicKey,
   subscriptionAccount = findSubscriptionAccountAddress(memberWallet),
-  vaultTokenAccount = findVaultTokenAccountAddress(mint, memberWallet),
-  rewardTokenAccount = findRewardTokenAccountAddress(mint, memberWallet);
+  vaultTokenAccount = findVaultTokenAccountAddress(mint, memberWallet);
 
 console.log(`Wallet: [${memberWallet.secretKey}]\n\n`);
 
@@ -114,7 +116,18 @@ const sourceTokenAccount = await spl.createAssociatedTokenAccount(
   associatedTokenProgram
 );
 
+const rewardsTokenAccount = await spl.createAssociatedTokenAccount(
+  program.provider.connection,
+  appWallet,
+  rewardMint,
+  memberWallet.publicKey,
+  { commitment: "confirmed" },
+  spl.TOKEN_2022_PROGRAM_ID,
+  associatedTokenProgram
+);
+
 console.log(`Source token account: ${sourceTokenAccount.toBase58()}`);
+console.log("Rewards token account", rewardsTokenAccount.toBase58());
 
 const createMetadataTransaction = () => {
   const address = getMetadataAddress(mint);
@@ -321,13 +334,20 @@ const withdrawTokens = async (advanceTime?: number) => {
 const claimRewards = async (advanceTime?: number) => {
   if (advanceTime) await sleep(advanceTime);
 
+  console.log("Reward mint", rewardMint.toBase58());
+  console.log("Reward token program", spl.TOKEN_2022_PROGRAM_ID.toBase58());
+
   try {
     const claimTransaction = await program.methods
       .claim()
       .accounts({
         subscription: subscriptionAccount,
+        mint: rewardMint,
+        authority: appWallet.publicKey,
+        tokenAccount: rewardsTokenAccount,
         signer: memberWallet.publicKey,
         systemProgram,
+        tokenProgram: spl.TOKEN_2022_PROGRAM_ID,
       })
       .signers([memberWallet])
       .rpc();
@@ -348,7 +368,7 @@ const transactionQueue = [
   () => new Promise((resolve) => depositTokens(1500, 500).then(resolve)), // Lambo eligability
   () => new Promise((resolve) => claimRewards(1000).then(resolve)),
   () => new Promise((resolve) => releaseTokens(500).then(resolve)),
-  () => new Promise((resolve) => withdrawTokens().then(resolve)),
+  // () => new Promise((resolve) => withdrawTokens().then(resolve)),
   // () => new Promise((resolve) => claimRewards(3500).then(resolve)),
   // () => new Promise((resolve) => depositTokens(123_458, 10000).then(resolve)), // Super chad member
   // () => new Promise((resolve) => depositTokens(2_007_824).then(resolve)), // Mega chad member

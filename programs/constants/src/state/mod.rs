@@ -32,8 +32,6 @@ pub struct SystemAccount {
 }
 
 impl SystemAccount {
-    pub const SEED_PREFIX: &'static [u8] = b"locker_system";
-
     pub const LATEST_VERSION: u8 = 1;
     /** Ratio of entries granted to amount deposited */
     const REWARD_FACTOR: u64 = 100;
