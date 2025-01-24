@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use crate::{constants::*, state::members::MemberAccount};
+use crate::{constants::*, state::subscription::SubscriptionAccount};
 
 /**
  Self exclusion is the process of preventing oneself from
@@ -14,10 +14,10 @@ use crate::{constants::*, state::members::MemberAccount};
 #[derive(Accounts)]
 pub struct ExcludeAccounts<'info> {
     #[account(mut,
-        seeds = [MemberAccount::SEED_PREFIX, signer.key().as_ref()],
+        seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump
     )]
-    pub member_account: Account<'info, MemberAccount>,
+    pub subscription: Account<'info, SubscriptionAccount>,
 
     #[account(mut)]
     pub signer: Signer<'info>,

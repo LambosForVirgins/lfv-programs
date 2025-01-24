@@ -11,23 +11,18 @@ use constants::*;
 use errors::*;
 use instructions::*;
 use state::*;
+use utils::*;
 
 pub mod constants;
 pub mod errors;
 pub mod instructions;
 pub mod state;
+pub mod utils;
 
-declare_id!("9JuJwm7kUPkCzHikuvMQozfrfbdt5nJZ1Wg9FPcQ4HeX");
-
-// TODO: Convert total amounts to struct with sub components
-// TODO: Flag tokens for unlocking and subtract from matured
-// TODO: Prevent rewards for unlocked tokens
-// TODO: Prevent withdrawals to only unlocked tokens
-// TODO: Consolidate slots
-// TODO: Probably need to swap timestamps from recording past into indicating future times, for the frontend
+declare_id!("5FMGC6UGHY62NsitCmbkqwn5hJ7533mGRoxogf8JU8sM");
 
 #[program]
-mod subscription {
+mod reward_program {
     use super::*;
 
     pub fn initialize(ctx: Context<InitializeAccounts>) -> Result<()> {
@@ -35,55 +30,47 @@ mod subscription {
         // Validate time before reassinging to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Update timestamps
-        ctx.accounts.member_account.time_created = time_now as u64;
-        ctx.accounts.member_account.time_rewarded = time_now as u64;
+        ctx.accounts.subscription.time_created = time_now as u64;
+        ctx.accounts.subscription.time_rewarded = time_now as u64;
         // Output logs
         sol_log_compute_units();
         Ok(())
     }
 
     pub fn exclude(ctx: Context<ExcludeAccounts>) -> Result<()> {
-        let member: &mut Account<MemberAccount> = &mut ctx.accounts.member_account;
-        member.update_status(AccountStatus::Excluded);
-        msg!("Member self excluded");
+        let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
+        // Validate the account status
+        require_valid_status!(subscription.status);
+        // Update the status
+        subscription.update_status(AccountStatus::Excluded);
+        msg!("Subscription self excluded");
         sol_log_compute_units();
         Ok(())
     }
 
     pub fn deposit(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
-        // Ensure the correct token mint was used
-        require_keys_eq!(
-            ctx.accounts.mint.key(),
-            MINT_KEY,
-            TransferError::InvalidMint
-        );
-
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let source: &mut Account<TokenAccount> = &mut ctx.accounts.source_token_account;
-        let member: &mut Account<MemberAccount> = &mut ctx.accounts.member_account;
         // Validate time before reassinging to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
+        // Validate the amount in valid range
+        require!(amount > 0, TransferError::InvalidAmount);
         // Check the source has enough tokens to deposit
         require!(amount <= source.amount, TransferError::InsufficientBalance);
-        // Construct transfer instruction
-        let transfer_instruction: Transfer = Transfer {
-            from: ctx.accounts.source_token_account.to_account_info(),
-            to: ctx.accounts.vault_token_account.to_account_info(),
-            authority: ctx.accounts.signer.to_account_info(),
-        };
-        // Initialize the transfer context
-        let context: CpiContext<Transfer> = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            transfer_instruction,
-        );
+        // Validate the account status
+        require_valid_status!(ctx.accounts.subscription.status);
         // Execute transfer instruction
-        anchor_spl::token::transfer(context, amount)?;
-        // Update member account with deposit and reallocate account memory
-        let rewards: u64 = member.on_deposit(amount, time_now as u64).unwrap();
-        member.grant_rewards(rewards);
+        anchor_spl::token::transfer(ctx.accounts.initialize_deposit_context(), amount)?;
+        // Update subscription account with deposit and reallocate account memory
+        let rewards: u64 = ctx
+            .accounts
+            .subscription
+            .on_deposit(amount, time_now as u64)
+            .unwrap();
+        // subscription.grant_rewards(rewards);
 
-        ctx.accounts.member_account.realloc(
-            &ctx.accounts.member_account.to_account_info(),
+        ctx.accounts.subscription.realloc(
+            &ctx.accounts.subscription.to_account_info(),
             &ctx.accounts.signer.to_account_info(),
             &ctx.accounts.system_program.to_account_info(),
         );
@@ -99,64 +86,90 @@ mod subscription {
 
     pub fn claim(ctx: Context<ClaimAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
-        let member: &mut Account<MemberAccount> = &mut ctx.accounts.member_account;
+        let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
         // Validate time before reassinging to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
 
-        let rewards = member.on_claim(time_now as u64).unwrap();
-        member.grant_rewards(rewards);
+        let rewards = subscription.on_claim(time_now as u64).unwrap();
+        // subscription.grant_rewards(rewards);
+        // Mint reward tokens to the member's associated token account
+        // token::mint_to(ctx.accounts.initialize_mint_context(), amount)?;
 
         msg!("Rewarded {} entries", rewards);
         sol_log_compute_units();
         Ok(())
     }
 
-    pub fn withdraw(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
+    pub fn release(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
-        let signer_key: Pubkey = ctx.accounts.signer.key();
-        let mint_key: Pubkey = ctx.accounts.mint.key();
         let vault: &mut Account<TokenAccount> = &mut ctx.accounts.source_token_account;
-        let member: &mut Account<MemberAccount> = &mut ctx.accounts.member_account;
+        let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
+        // Validate time before reassinging to u64
+        require!(time_now > 0, HostError::InvalidTimestamp);
+        // Check vault token account has sufficient balance
+        require!(amount <= vault.amount, TransferError::InvalidBalance);
+        // Update pool attributes
+        let rewards = subscription.on_release(amount, time_now as u64).unwrap();
+        // subscription.grant_rewards(rewards);
+
+        ctx.accounts.subscription.realloc(
+            &ctx.accounts.subscription.to_account_info(),
+            &ctx.accounts.signer.to_account_info(),
+            &ctx.accounts.system_program.to_account_info(),
+        )?;
+
+        sol_log_compute_units();
+        Ok(())
+    }
+
+    pub fn withdraw(ctx: Context<TransferAccounts>) -> Result<()> {
+        let time_now: i64 = Clock::get()?.unix_timestamp;
+        let mint_key: Pubkey = ctx.accounts.mint.key();
+        let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
         // Validate time before reassinging to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Ensure the correct token mint was used
         require_keys_eq!(mint_key, MINT_KEY, TransferError::InvalidMint);
-        // Check vault token account has sufficient balance
-        require!(amount <= vault.amount, TransferError::InvalidBalance);
-        // Update or remove locked slots for amount
-        // Subtract amount from the total locked amount
-        // Construct transfer instruction
+        // Request the transfer amount
+        let amount = subscription.on_withdraw(time_now as u64)?;
+        let bump: u8 = ctx.bumps.subscription;
+        // Construct withdraw transfer instruction
         let transfer_instruction: Transfer = Transfer {
             from: ctx.accounts.vault_token_account.to_account_info(),
             to: ctx.accounts.source_token_account.to_account_info(),
-            authority: member.to_account_info(),
+            authority: ctx.accounts.subscription.to_account_info(),
         };
+        let signer_key = ctx.accounts.signer.key();
         // Derive program signature
-        // TODO: Replace this with impl function
-        let bump: u8 = ctx.bumps.member_account;
-        let seeds: &[&[u8]; 3] = &[
-            MemberAccount::SEED_PREFIX.as_ref(),
+        let seeds = [
+            SUBSCRIPTION_SEED_PREFIX.as_ref(),
             signer_key.as_ref(),
             &[bump],
         ];
-        let signature: &[&[&[u8]]; 1] = &[&seeds[..]];
+        // Create signature with seeds
+        let signature = &[&seeds[..]];
         // Initialize the transfer context
-        let context: CpiContext<Transfer> = CpiContext::new_with_signer(
+        let transfer_context = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             transfer_instruction,
             signature,
         );
         // Execute transfer instruction
-        anchor_spl::token::transfer(context, amount)?;
-        // Update pool attributes
-        let rewards = member.on_withdraw(amount, time_now as u64).unwrap();
-        member.grant_rewards(rewards);
+        anchor_spl::token::transfer(transfer_context, amount)?;
 
-        ctx.accounts.member_account.realloc(
-            &ctx.accounts.member_account.to_account_info(),
-            &ctx.accounts.signer.to_account_info(),
-            &ctx.accounts.system_program.to_account_info(),
-        );
+        sol_log_compute_units();
+        Ok(())
+    }
+
+    pub fn cancel(ctx: Context<CancelAccounts>) -> Result<()> {
+        let time_now: i64 = Clock::get()?.unix_timestamp;
+        let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
+        // Validate time before reassinging to u64
+        require!(time_now > 0, HostError::InvalidTimestamp);
+
+        // Should schedule all tokens for release
+
+        // Should claim back rent
 
         sol_log_compute_units();
         Ok(())

@@ -2,24 +2,12 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum TransferError {
-    #[msg("Invalid Member Pool")]
-    InvalidMemberPool,
-    #[msg("Unauthorised Member Pool")]
-    UnauthorisedMemberPool,
     #[msg("Invalid token balance")]
     InvalidBalance,
+    #[msg("Invalid amount")]
+    InvalidAmount,
     #[msg("Insufficient token balance")]
     InsufficientBalance,
-    #[msg("No Matching Entry to Withdraw")]
-    InvalidEntryAddress,
-    #[msg("Entry Owner Key Mismatch")]
-    InvalidOwner,
-    #[msg("Withdrawal period not reached")]
-    InvalidWithdrawTime,
-    #[msg("Withdraw Entry Index OverFlow")]
-    IndexOverflow,
-    #[msg("Insufficient Lamports")]
-    LackLamports,
     #[msg("Invalid mint")]
     InvalidMint,
 }

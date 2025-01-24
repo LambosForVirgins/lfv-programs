@@ -7,7 +7,7 @@ use anchor_spl::{
 use crate::{constants::*, errors::*, state::subscription::SubscriptionAccount};
 
 #[derive(Accounts)]
-pub struct ClaimAccounts<'info> {
+pub struct CancelAccounts<'info> {
     #[account(mut,
         seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump

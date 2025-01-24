@@ -1,17 +1,17 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::{constants::*, state::members::MemberAccount};
+use crate::{constants::*, state::subscription::SubscriptionAccount};
 
 #[derive(Accounts)]
 pub struct InitializeAccounts<'info> {
     #[account(
-        init, 
+        init,
         payer = signer,
-        seeds = [MemberAccount::SEED_PREFIX, signer.key().as_ref()],
+        seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump,
-        space = ANCHOR_DISCRIMINATOR_SIZE + std::mem::size_of::<MemberAccount>(),
+        space = ANCHOR_DISCRIMINATOR_SIZE + std::mem::size_of::<SubscriptionAccount>(),
     )]
-    pub member_account: Account<'info, MemberAccount>,
+    pub subscription: Account<'info, SubscriptionAccount>,
 
     /**
      * Derive an associated token account between the signers unique
@@ -22,9 +22,9 @@ pub struct InitializeAccounts<'info> {
     #[account(
         init,
         payer = signer,
-        seeds = [MemberAccount::SEED_PREFIX_VAULT,  mint.key().as_ref(), signer.key().as_ref()],
+        seeds = [VAULT_SEED_PREFIX, mint.key().as_ref(), signer.key().as_ref()],
         token::mint = mint,
-        token::authority = member_account,
+        token::authority = subscription,
         bump
     )]
     pub vault_token_account: Account<'info, TokenAccount>,
@@ -36,7 +36,6 @@ pub struct InitializeAccounts<'info> {
 
     #[account(mut)]
     signer: Signer<'info>,
-
     system_program: Program<'info, System>,
     token_program: Program<'info, Token>,
 }
