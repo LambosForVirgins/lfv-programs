@@ -16,8 +16,10 @@ pub enum TransferError {
 pub enum MemberError {
     #[msg("Account suspended")]
     AccountSuspended,
-    #[msg("Immutable account status")]
-    ImmutableAccountStatus,
+    #[msg("Member account is disabled")]
+    AccountDisabled,
+    #[msg("Account status can't be changed")]
+    AccountImmutable,
 }
 
 #[error_code]
@@ -36,6 +38,8 @@ pub enum LockingError {
 pub enum HostError {
     #[msg("Invalid timestamp")]
     InvalidTimestamp,
+    #[msg("No rewards available")]
+    NoRewards,
     #[msg("Invalid Pause Authority")]
     InvalidPauseAuthority,
     #[msg("System Already Paused")]

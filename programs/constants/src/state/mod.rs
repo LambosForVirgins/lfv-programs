@@ -1,15 +1,10 @@
-use anchor_lang::{
-    prelude::*, solana_program::native_token::LAMPORTS_PER_SOL, solana_program::program_pack::Pack,
-};
-use anchor_spl::token::spl_token;
+use anchor_lang::prelude::*;
 
-pub use host::*;
 pub use slots::*;
 pub use status::*;
 pub use subscription::*;
 pub use tiers::*;
 
-pub mod host;
 pub mod slots;
 pub mod status;
 pub mod subscription;

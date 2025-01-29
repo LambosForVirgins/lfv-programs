@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::{constants::*, state::subscription::SubscriptionAccount};
+use crate::{
+    constants::{ANCHOR_DISCRIMINATOR_SIZE, SUBSCRIPTION_SEED_PREFIX, VAULT_SEED_PREFIX},
+    state::subscription::SubscriptionAccount,
+};
 
 #[derive(Accounts)]
 pub struct InitializeAccounts<'info> {
@@ -30,7 +33,7 @@ pub struct InitializeAccounts<'info> {
     pub vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        mint::token_program = token_program
+        mint::token_program = token_program,
     )]
     mint: Account<'info, Mint>,
 

@@ -1,25 +1,30 @@
 {
-  "scripts": {
-    "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
-  },
-  "dependencies": {
-    "@coral-xyz/anchor": "0.29.0",
-    "@solana/spl-token": "0.4.3",
-    "@solana/web3.js": "1.78.4",
-    "assert": "*",
-    "bn.js": "*",
-    "@metaplex-foundation/mpl-token-metadata": "2.13.0"
-  },
-  "devDependencies": {
-    "@types/bn.js": "^5.1.1",
-    "@types/chai": "^4.3.5",
-    "@types/mocha": "^10.0.1",
-    "chai": "^4.3.8",
-    "mocha": "^10.2.0",
-    "prettier": "^3.0.2",
-    "ts-mocha": "^10.0.0",
-    "typescript": "^5.2.2"
-  },
-  "packageManager": "yarn@4.6.0+sha512.5383cc12567a95f1d668fbe762dfe0075c595b4bfff433be478dbbe24e05251a8e8c3eb992a986667c1d53b6c3a9c85b8398c35a960587fbd9fa3a0915406728"
+    "packageManager": "yarn@4.6.0",
+    "scripts": {
+        "build": "",
+        "deploy": "",
+        "start": "",
+        "test": "",
+        "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    },
+    "dependencies": {
+        "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
+        "@solana/spl-token": "^0.4.9",
+        "@solana/web3.js": "^1.98.0",
+        "assert": "*",
+        "bn.js": "^5.2.1"
+    },
+    "devDependencies": {
+        "@coral-xyz/anchor": "^0.30.1",
+        "@types/bn.js": "^5.1.1",
+        "@types/chai": "^4.3.5",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "^22.10.10",
+        "chai": "^4.3.8",
+        "mocha": "^10.2.0",
+        "prettier": "^3.0.2",
+        "ts-mocha": "^10.0.0",
+        "typescript": "^5.2.2"
+    }
 }

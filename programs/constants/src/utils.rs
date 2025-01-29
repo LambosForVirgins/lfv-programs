@@ -1,13 +1,22 @@
 use crate::constants::*;
 
 pub const fn lamports_to_sol(lamports: u64) -> u64 {
-    lamports / 1_000_000_000
-}
-
-pub const fn tokens_to_rewards(token_amount: u64) -> u64 {
-    token_amount / REWARD_FACTOR
+    match lamports.checked_div(10u64.pow(9)) {
+        Some(result) => result,
+        None => panic!("Multiplication overflowed"),
+    }
 }
 
 pub const fn lamports_to_rewards(lamports: u64) -> u64 {
-    lamports_to_sol(lamports) / REWARD_FACTOR
+    match lamports_to_sol(lamports).checked_div(REWARD_FACTOR) {
+        Some(result) => result,
+        None => panic!("Multiplication overflowed"),
+    }
+}
+
+pub const fn rewards_to_lamports(lamports: u64) -> u64 {
+    match lamports.checked_mul(10u64.pow(4)) {
+        Some(result) => result,
+        None => panic!("Multiplication overflowed"),
+    }
 }

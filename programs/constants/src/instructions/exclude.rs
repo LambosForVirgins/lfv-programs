@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
-
-use crate::{constants::*, state::subscription::SubscriptionAccount};
+use crate::{constants::SUBSCRIPTION_SEED_PREFIX, state::subscription::SubscriptionAccount};
 
 /**
  Self exclusion is the process of preventing oneself from

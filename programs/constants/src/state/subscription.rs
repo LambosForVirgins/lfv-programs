@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction::*};
 use crate::{
-    constants::*, errors::*, slots::Transaction, status::AccountStatus, tiers::MemberTier, utils::*,
+    constants::*, errors::TransferError, slots::Transaction, status::AccountStatus,
+    tiers::MemberTier, utils::*,
 };
 use solana_program::program_pack::IsInitialized;
 
@@ -12,13 +13,14 @@ pub struct SubscriptionAccount {
     /** Persists the tier of the greatest filled subscription slot */
     pub tier: u8,
     pub status: u8,
-    pub entries: u64,
     /** Total amount of tokens managed by the account */
     pub total_amount: u64,
     /** Amount of tokens passed their first epoch */
     pub total_matured: u64,
     /** Amount of tokens pending release */
     pub total_released: u64,
+    /** Amount of unclaimed entry tokens */
+    pub total_rewards: u64,
     /** Initial creation date of the members account */
     pub time_created: u64,
     /** Date of the last reward granted to matured tokens */
@@ -32,45 +34,40 @@ impl SubscriptionAccount {
     pub const LATEST_VERSION: u8 = 1;
     pub const MAX_SLOTS: usize = 8;
 
-    pub fn on_claim(&mut self, time_now: u64) -> Result<u64> {
+    pub fn claim(&mut self, time_now: u64) -> Result<u64> {
         // Determine unclaimed rewards
         let mut rewards: u64 = self.get_unclaimed_rewards(time_now);
         // Mature existing slots and collect rewards
-        rewards += self.mature_slots(time_now);
+        rewards += self.mature_slots(time_now).unwrap();
         // Update the reward timestamp
         self.time_rewarded = time_now;
+        self.total_rewards = 0;
         // Return outstanding rewards
         Ok(rewards)
     }
 
-    // on_lock
-    pub fn on_deposit(&mut self, amount: u64, time_now: u64) -> Result<u64> {
-        require!(
-            self.slots.len() < Self::MAX_SLOTS,
-            LockingError::MaxSlotsExceeded
-        );
-        // Grant entries and update locked amount counter
+    pub fn lock(&mut self, amount: u64, time_now: u64) -> Result<()> {
+        // Mature existing slots
+        self.mature_slots(time_now);
+        // Update locked amount counter
         self.total_amount += amount;
-        // Claim outstanding rewards prior to everything
-        let mut rewards: u64 = self.on_claim(time_now).unwrap();
+        // Immediately grant entries
+        self.total_rewards += lamports_to_rewards(amount);
+        // Allocate a new deposit slot and store
         let new_slot = Transaction::Deposit {
             amount: amount,
             time_created: time_now,
             time_matured: time_now + MATURATION_PERIOD,
-        };
-        // TODO: Compress slots
-        // Append the new locked slot if it can't be compress
+        }; // TODO: Compress slots
+           // Append the deposit slot if not compressed
         self.slots.push(new_slot);
-
-        rewards += lamports_to_rewards(amount);
         // Return outstanding rewards
-        Ok(rewards)
+        Ok(())
     }
 
-    // on_unlock
-    pub fn on_release(&mut self, amount: u64, time_now: u64) -> Result<u64> {
+    pub fn unlock(&mut self, amount: u64, time_now: u64) -> Result<u64> {
         // Claim outstanding rewards
-        let rewards: u64 = self.on_claim(time_now).unwrap();
+        self.claim(time_now).unwrap();
         let time_next_epoch: u64 = self.time_rewarded + MATURATION_PERIOD;
         // Check sufficient token maturity
         require!(
@@ -86,8 +83,8 @@ impl SubscriptionAccount {
         self.slots.push(withdrawal);
         // We shift balance from locked to liquidity
         self.total_matured -= amount;
-        // Return outstanding rewards
-        Ok(rewards)
+        // Return amount released
+        Ok(amount)
     }
 
     pub fn realloc<'a>(
@@ -99,7 +96,7 @@ impl SubscriptionAccount {
         // Calculate rent balance adjustment required from the payer
         let rent = Rent::get()?; // TODO: Handle error mapping
         let target_balance: u64 = target_account.get_lamports();
-        let new_account_size: usize = self.get_space();
+        let new_account_size: usize = self.get_packed_len();
         let rent_exempt_minimum: u64 = rent.minimum_balance(new_account_size);
 
         if target_balance < rent_exempt_minimum {
@@ -122,7 +119,8 @@ impl SubscriptionAccount {
 
     pub fn on_withdraw(&mut self, time_now: u64) -> Result<u64> {
         // Mature withdarwal slots for release
-        self.mature_slots(time_now);
+        self.mature_slots(time_now)?; // TODO: Handle error
+
         // Get the updated release amount
         let amount = self.total_released;
 
@@ -132,7 +130,7 @@ impl SubscriptionAccount {
         Ok(amount)
     }
 
-    pub fn mature_slots(&mut self, time_now: u64) -> u64 {
+    pub fn mature_slots(&mut self, time_now: u64) -> Result<u64> {
         let mut matured_change: u64 = 0;
         let mut matured_rewards: u64 = 0;
         let mut released_change: u64 = 0;
@@ -149,12 +147,9 @@ impl SubscriptionAccount {
                         // Determine how many reward cycles have elapsed since maturity
                         let epoch_length: u64 = time_matured - time_created;
                         let outstanding_cycles: u64 = (time_now - time_matured) / epoch_length;
-                        matured_rewards += outstanding_cycles * amount;
+                        matured_rewards += lamports_to_rewards(outstanding_cycles * amount);
                     }
-                    Transaction::Withdraw {
-                        amount,
-                        time_released,
-                    } => {
+                    Transaction::Withdraw { amount, .. } => {
                         released_change += amount;
                     }
                 }
@@ -167,17 +162,20 @@ impl SubscriptionAccount {
         // Update total matured and released balances
         self.total_matured += matured_change;
         self.total_released += released_change;
+        // Update the accrued rewards for claiming
+        self.total_rewards += matured_rewards;
         // Update member tier for new balances
         self.tier = MemberTier::from_tier(MemberTier::get_tier(
             self.total_amount - self.total_released,
         ));
 
-        lamports_to_rewards(matured_rewards)
+        Ok(matured_rewards)
     }
 
     fn get_unclaimed_rewards(&self, time_now: u64) -> u64 {
+        let unclaimed_rewards = self.total_rewards;
         let total_epochs: u64 = self.get_unclaimed_epochs(time_now);
-        lamports_to_rewards(self.total_matured * total_epochs)
+        lamports_to_rewards(self.total_matured * total_epochs) + unclaimed_rewards
     }
 
     fn get_unclaimed_epochs(&self, time_now: u64) -> u64 {
@@ -185,22 +183,7 @@ impl SubscriptionAccount {
         return time_elapsed / MATURATION_PERIOD;
     }
 
-    /**
-     Updates the account status when current status
-     is not `AccountStatus::Excluded` or `AccountStatus::Suspended`
-     */
-    pub fn update_status(&mut self, new_status: AccountStatus) -> Result<()> {
-        let status: AccountStatus = AccountStatus::from_u8(self.status);
-        match status {
-            AccountStatus::Pending | AccountStatus::Paused | AccountStatus::Active => {
-                self.status = new_status.to_u8();
-                Ok(())
-            }
-            _ => Err(MemberError::ImmutableAccountStatus.into()),
-        }
-    }
-
-    pub fn get_space(&self) -> usize {
+    pub fn get_packed_len(&self) -> usize {
         self.space(self.slots.len())
     }
 
@@ -224,10 +207,10 @@ impl Default for SubscriptionAccount {
             version: Self::LATEST_VERSION,
             tier: MemberTier::from_tier(MemberTier::Pending),
             status: AccountStatus::Pending.to_u8(),
-            entries: 0,
             total_amount: 0,
             total_matured: 0,
             total_released: 0,
+            total_rewards: 0,
             time_created: 0,
             time_rewarded: 0,
             slots: Vec::new(),

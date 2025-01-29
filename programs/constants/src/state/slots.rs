@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{constants::*, errors::*};
+use crate::constants::ANCHOR_DISCRIMINATOR_SIZE;
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Debug)]
 pub enum Transaction {
@@ -24,15 +24,8 @@ impl Transaction {
      the current time `now` */
     pub fn is_matured(&self, time_now: u64) -> bool {
         match self {
-            Transaction::Deposit {
-                amount,
-                time_created,
-                time_matured,
-            } => time_now >= *time_matured,
-            Transaction::Withdraw {
-                amount,
-                time_released,
-            } => time_now >= *time_released,
+            Transaction::Deposit { time_matured, .. } => time_now >= *time_matured,
+            Transaction::Withdraw { time_released, .. } => time_now >= *time_released,
         }
     }
 }

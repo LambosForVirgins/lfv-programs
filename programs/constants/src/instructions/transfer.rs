@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount, Transfer};
-
-use crate::{constants::*, errors::*, state::subscription::SubscriptionAccount};
+use crate::{
+    constants::{MINT_KEY, SUBSCRIPTION_SEED_PREFIX, VAULT_SEED_PREFIX},
+    state::subscription::SubscriptionAccount,
+};
 
 #[derive(Accounts)]
 pub struct TransferAccounts<'info> {
@@ -28,15 +30,12 @@ pub struct TransferAccounts<'info> {
     #[account(
         address = MINT_KEY
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: Account<'info, Mint>, // TODO: Not needed for release/withdraw
 
-    // #[account(mut)]
-    // pub reward_mint: Account<'info, Mint>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    clock: Sysvar<'info, Clock>,
 }
 
 impl<'info> TransferAccounts<'info> {
@@ -51,29 +50,14 @@ impl<'info> TransferAccounts<'info> {
         CpiContext::new(self.token_program.to_account_info(), transfer_instruction)
     }
 
-    pub fn initialize_withdraw_context(
-        &self,
-        bump: u8,
-    ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+    pub fn initialize_withdraw_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         // Construct withdraw transfer instruction
         let transfer_instruction: Transfer = Transfer {
             from: self.vault_token_account.to_account_info(),
             to: self.source_token_account.to_account_info(),
             authority: self.subscription.to_account_info(),
         };
-        // Derive program signature
-        // let seeds = [
-        //     SubscriptionAccount::SEED_PREFIX.as_ref(),
-        //     self.signer.key().as_ref(),
-        //     &[bump],
-        // ];
-        // Create signature with seeds
-        // let signature = &[&seeds[..]];
         // Initialize the transfer context
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            transfer_instruction,
-            // signature,
-        )
+        CpiContext::new(self.token_program.to_account_info(), transfer_instruction)
     }
 }
