@@ -2,24 +2,12 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum TransferError {
-    #[msg("Invalid Member Pool")]
-    InvalidMemberPool,
-    #[msg("Unauthorised Member Pool")]
-    UnauthorisedMemberPool,
     #[msg("Invalid token balance")]
     InvalidBalance,
+    #[msg("Invalid amount")]
+    InvalidAmount,
     #[msg("Insufficient token balance")]
     InsufficientBalance,
-    #[msg("No Matching Entry to Withdraw")]
-    InvalidEntryAddress,
-    #[msg("Entry Owner Key Mismatch")]
-    InvalidOwner,
-    #[msg("Withdrawal period not reached")]
-    InvalidWithdrawTime,
-    #[msg("Withdraw Entry Index OverFlow")]
-    IndexOverflow,
-    #[msg("Insufficient Lamports")]
-    LackLamports,
     #[msg("Invalid mint")]
     InvalidMint,
 }
@@ -28,8 +16,10 @@ pub enum TransferError {
 pub enum MemberError {
     #[msg("Account suspended")]
     AccountSuspended,
-    #[msg("Immutable account status")]
-    ImmutableAccountStatus,
+    #[msg("Member account is disabled")]
+    AccountDisabled,
+    #[msg("Account status can't be changed")]
+    AccountImmutable,
 }
 
 #[error_code]
@@ -48,6 +38,8 @@ pub enum LockingError {
 pub enum HostError {
     #[msg("Invalid timestamp")]
     InvalidTimestamp,
+    #[msg("No rewards available")]
+    NoRewards,
     #[msg("Invalid Pause Authority")]
     InvalidPauseAuthority,
     #[msg("System Already Paused")]

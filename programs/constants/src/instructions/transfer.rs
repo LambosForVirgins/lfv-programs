@@ -1,20 +1,22 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
-
-use crate::{constants::*, state::members::MemberAccount};
+use anchor_spl::token::{Mint, Token, TokenAccount, Transfer};
+use crate::{
+    constants::{MINT_KEY, SUBSCRIPTION_SEED_PREFIX, VAULT_SEED_PREFIX},
+    state::subscription::SubscriptionAccount,
+};
 
 #[derive(Accounts)]
 pub struct TransferAccounts<'info> {
     #[account(mut,
-        seeds = [MemberAccount::SEED_PREFIX, signer.key().as_ref()],
+        seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump
     )]
-    pub member_account: Account<'info, MemberAccount>,
+    pub subscription: Account<'info, SubscriptionAccount>,
 
     #[account(mut,
-        seeds = [MemberAccount::SEED_PREFIX_VAULT, mint.key().as_ref(), signer.key().as_ref()],
+        seeds = [VAULT_SEED_PREFIX, mint.key().as_ref(), signer.key().as_ref()],
         token::mint = mint,
-        token::authority = member_account,
+        token::authority = subscription,
         bump
     )]
     pub vault_token_account: Account<'info, TokenAccount>,
@@ -28,11 +30,34 @@ pub struct TransferAccounts<'info> {
     #[account(
         address = MINT_KEY
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: Account<'info, Mint>, // TODO: Not needed for release/withdraw
 
     #[account(mut)]
     pub signer: Signer<'info>,
-    pub token_program: Program<'info, Token>, // SPL Token program
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    clock: Sysvar<'info, Clock>,
+}
+
+impl<'info> TransferAccounts<'info> {
+    pub fn initialize_deposit_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        // Construct deposit transfer instruction
+        let transfer_instruction: Transfer = Transfer {
+            from: self.source_token_account.to_account_info(),
+            to: self.vault_token_account.to_account_info(),
+            authority: self.signer.to_account_info(),
+        };
+        // Initialize the transfer context
+        CpiContext::new(self.token_program.to_account_info(), transfer_instruction)
+    }
+
+    pub fn initialize_withdraw_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        // Construct withdraw transfer instruction
+        let transfer_instruction: Transfer = Transfer {
+            from: self.vault_token_account.to_account_info(),
+            to: self.source_token_account.to_account_info(),
+            authority: self.subscription.to_account_info(),
+        };
+        // Initialize the transfer context
+        CpiContext::new(self.token_program.to_account_info(), transfer_instruction)
+    }
 }

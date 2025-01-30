@@ -1,18 +1,13 @@
-use anchor_lang::{
-    prelude::*, solana_program::native_token::LAMPORTS_PER_SOL, solana_program::program_pack::Pack,
-};
-use anchor_spl::token::spl_token;
+use anchor_lang::prelude::*;
 
-pub use host::*;
-pub use members::*;
 pub use slots::*;
 pub use status::*;
+pub use subscription::*;
 pub use tiers::*;
 
-pub mod host;
-pub mod members;
 pub mod slots;
 pub mod status;
+pub mod subscription;
 pub mod tiers;
 
 #[account]
@@ -32,8 +27,6 @@ pub struct SystemAccount {
 }
 
 impl SystemAccount {
-    pub const SEED_PREFIX: &'static [u8] = b"locker_system";
-
     pub const LATEST_VERSION: u8 = 1;
     /** Ratio of entries granted to amount deposited */
     const REWARD_FACTOR: u64 = 100;
