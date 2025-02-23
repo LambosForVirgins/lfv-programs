@@ -35,35 +35,6 @@ mod reward_program {
         Ok(())
     }
 
-    pub fn initialize_mint(
-        ctx: Context<InitializeRewards>,
-        params: InitializeRewardsParams,
-    ) -> Result<()> {
-        let seeds = &[REWARDS_SEED_PREFIX, &[ctx.bumps.mint]];
-        let signer = &[&seeds[..]];
-        let metadata_ctx = ctx.accounts.initialize_metadata_context();
-        let token_data: DataV2 = DataV2 {
-            name: params.name,
-            symbol: params.symbol,
-            uri: params.uri,
-            seller_fee_basis_points: 0,
-            creators: None,
-            collection: None,
-            uses: None,
-        };
-
-        create_metadata_accounts_v3(
-            metadata_ctx.with_signer(signer),
-            token_data,
-            true,
-            true,
-            None,
-        )?;
-
-        sol_log_compute_units();
-        Ok(())
-    }
-
     pub fn deposit(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let source: &mut Account<TokenAccount> = &mut ctx.accounts.source_token_account;
@@ -116,7 +87,6 @@ mod reward_program {
             )?;
         }
 
-        msg!("Rewarded {} entries", rewards);
         sol_log_compute_units();
         Ok(())
     }
@@ -138,7 +108,6 @@ mod reward_program {
             &ctx.accounts.system_program.to_account_info(),
         )?;
 
-        msg!("Released {} tokens", released);
         sol_log_compute_units();
         Ok(())
     }
