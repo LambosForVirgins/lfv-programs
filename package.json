@@ -1,7 +1,13 @@
 {
+    "name": "lfv-programs",
+    "version": "1.0.1",
+    "private": true,
+    "engines": {
+        "node": "20.x"
+    },
     "packageManager": "yarn@4.6.0",
     "scripts": {
-        "build": "",
+        "build": "anchor build",
         "deploy": "",
         "start": "",
         "test": "",
@@ -25,6 +31,7 @@
         "mocha": "^10.2.0",
         "prettier": "^3.0.2",
         "ts-mocha": "^10.0.0",
-        "typescript": "^5.2.2"
+        "typescript": "^5.2.2",
+        "vitest": "^3.0.6"
     }
 }
