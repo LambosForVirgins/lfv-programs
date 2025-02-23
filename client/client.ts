@@ -94,7 +94,7 @@ console.log(`Wallet: [${memberWallet.secretKey}]\n\n`);
 
   try {
     const metaAddress = getMetadataAddress(rewardMint);
-    const admin = pg.wallets.deployment.keypair;
+    const admin = pg.wallets.app.keypair;
 
     console.log("Meta address", metaAddress.toBase58());
 
