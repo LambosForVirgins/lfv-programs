@@ -205,7 +205,7 @@ impl Default for SubscriptionAccount {
     fn default() -> Self {
         SubscriptionAccount {
             version: Self::LATEST_VERSION,
-            tier: MemberTier::from_tier(MemberTier::Pending),
+            tier: MemberTier::from_tier(MemberTier::Virgin),
             status: AccountStatus::Pending.to_u8(),
             total_amount: 0,
             total_matured: 0,
