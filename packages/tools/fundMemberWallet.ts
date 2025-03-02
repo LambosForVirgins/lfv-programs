@@ -14,13 +14,12 @@ import BN from "bn.js";
 import { Logger } from "./Logger";
 
 export const fundMemberWallet = async (
-  amount: number,
+  initialMintAmount: BN,
   receiver: PublicKey,
   signer: Keypair
 ) => {
   const decimalFactor = new BN(Math.pow(10, 9));
   const solAmount = new BN(1).mul(decimalFactor);
-  const mintAmount = new BN(amount).mul(new BN(MINT_DECIMALS)); // TODO: Make this a utility function with the decimalFactor
 
   const destinationTokenAccount = getAssociatedTokenAddressSync(
     MINT_ADDRESS,
@@ -38,7 +37,7 @@ export const fundMemberWallet = async (
         MINT_ADDRESS,
         destinationTokenAccount,
         signer.publicKey,
-        mintAmount.toNumber(),
+        initialMintAmount.toNumber(),
         [],
         TOKEN_PROGRAM_ID
       )

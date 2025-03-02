@@ -4,11 +4,12 @@ import * as spl from "@solana/spl-token";
 import { appWallet, MINT_ADDRESS, program } from "./constants";
 import {
   findSubscriptionAccountAddress,
-  findRewardTokenMintAddress,
+  findRewardMintAddress,
   findVaultAccountAddress,
-  findMetaplexAddress,
+  findDrawAccount,
+  findTicketAccountAddress,
 } from "@/pda";
-import { loadKeypairFileSync, sleep } from "@/testing/utils";
+import { lamportsToNumber, sleep } from "@/testing/utils";
 import { initializeSubscriptionAccount } from "@/subscriptions";
 import { claimRewards } from "@/rewards";
 import { depositTokens } from "@/vaults/depositTokens";
@@ -16,105 +17,79 @@ import { enterDraw } from "@/giveaways/enterDraw";
 import { fundMemberWallet } from "@/tools/fundMemberWallet";
 import { isMintInitialized } from "@/tools/isMintInitialized";
 import { Logger } from "@/tools/Logger";
+import { openDraw } from "@/giveaways/openDraw";
+import { findAllTickets } from "@/giveaways/findAllTickets";
 
 // Globals
-const MINT_BALANCE = 15_050_542;
+const MINT_BALANCE = 500_000;
 
 const memberWallet = new web3.Keypair(),
   associatedTokenProgram = spl.ASSOCIATED_TOKEN_PROGRAM_ID,
   decimalFactor = new BN(Math.pow(10, 9)),
-  amount = new BN(MINT_BALANCE).mul(decimalFactor),
+  initialMintBalance = new BN(MINT_BALANCE).mul(decimalFactor),
   mint = MINT_ADDRESS,
-  giveawayId = new BN(1),
-  drawNo = new BN(11),
-  rewardMint = findRewardTokenMintAddress(),
-  subscriptionAccount = findSubscriptionAccountAddress(memberWallet),
+  rewardMint = findRewardMintAddress(),
+  subscriptionAccount = findSubscriptionAccountAddress(memberWallet.publicKey),
   vaultTokenAccount = findVaultAccountAddress(mint, memberWallet);
 
 (async () => {
   Logger.info("Provider RPC endpoint", program.provider.connection.rpcEndpoint);
 
+  console.log("Secret", memberWallet.secretKey.toString());
+
   if (await isMintInitialized(program.provider.connection, rewardMint)) {
-    Logger.success(`Found mint account`, rewardMint.toBase58());
+    Logger.success(`Found reward mint account`, rewardMint.toBase58());
   } else {
-    Logger.warn(`Mint not found, attempting to create`, rewardMint.toBase58());
+    Logger.warn(
+      `Reward mint not found, attempting to create`,
+      rewardMint.toBase58()
+    );
   }
 
-  // try {
-  //   const payer = appWallet,
-  //     mintAuthority = appWallet,
-  //     lamports = await spl.getMinimumBalanceForRentExemptMint(
-  //       program.provider.connection
-  //     ),
-  //     decimals = 4,
-  //     transaction = new web3.Transaction();
-  //   // Allocate the mint account as PDA
-  //   transaction.add(
-  //     web3.SystemProgram.createAccount({
-  //       fromPubkey: payer.publicKey,
-  //       newAccountPubkey: rewardMint,
-  //       space: spl.MINT_SIZE,
-  //       lamports,
-  //       programId: spl.TOKEN_PROGRAM_ID,
-  //     })
-  //   );
-  //   // Initialize the mint with Token2022 program
-  //   transaction.add(
-  //     spl.createInitializeMintInstruction(
-  //       rewardMint,
-  //       decimals,
-  //       mintAuthority.publicKey,
-  //       null,
-  //       spl.TOKEN_PROGRAM_ID
-  //     )
-  //   );
-
-  //   await web3.sendAndConfirmTransaction(
-  //     program.provider.connection,
-  //     transaction,
-  //     [payer],
-  //     {
-  //       commitment: "confirmed",
-  //     }
-  //   );
-
-  //   console.log("Mint initialized with PDA at:", rewardMint.toBase58());
-  // } catch (error) {
-  //   console.error(error);
-  // }
-
-  const sourceTokenAccount = await spl.createAssociatedTokenAccount(
+  const sourceTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
     program.provider.connection,
     appWallet,
     mint,
     memberWallet.publicKey,
+    false,
+    "confirmed",
     { commitment: "confirmed" },
     spl.TOKEN_PROGRAM_ID,
     associatedTokenProgram
   );
 
-  const rewardsTokenAccount = await spl.createAssociatedTokenAccount(
+  const rewardsTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
     program.provider.connection,
     appWallet,
     rewardMint,
     memberWallet.publicKey,
+    false,
+    "confirmed",
     { commitment: "confirmed" },
     spl.TOKEN_PROGRAM_ID,
     associatedTokenProgram
   );
 
-  Logger.success("Created mint token account", sourceTokenAccount.toBase58());
+  Logger.success(
+    "Created mint token account",
+    sourceTokenAccount.address.toBase58()
+  );
   Logger.success(
     "Created rewards token account",
-    rewardsTokenAccount.toBase58()
+    rewardsTokenAccount.address.toBase58()
   );
+
+  const giveawayId = new BN(1),
+    drawNo = new BN(14);
 
   const transactionQueue = [
     () =>
       new Promise((resolve) =>
-        fundMemberWallet(MINT_BALANCE, memberWallet.publicKey, appWallet).then(
-          resolve
-        )
+        fundMemberWallet(
+          initialMintBalance,
+          memberWallet.publicKey,
+          appWallet
+        ).then(resolve)
       ),
     () =>
       new Promise((resolve) =>
@@ -122,26 +97,60 @@ const memberWallet = new web3.Keypair(),
       ),
     // // () => new Promise((resolve) => selfExclude().then(resolve)),
     () =>
-      new Promise((resolve) => depositTokens(1000, memberWallet).then(resolve)),
+      new Promise((resolve) => depositTokens(6000, memberWallet).then(resolve)),
+    () =>
+      new Promise((resolve) => depositTokens(5000, memberWallet).then(resolve)),
+    () => new Promise((resolve) => sleep(1000).then(resolve)),
+    () =>
+      new Promise((resolve) =>
+        claimRewards(
+          program.provider.connection,
+          memberWallet,
+          rewardsTokenAccount.address
+        ).then(resolve)
+      ),
     // () =>
     //   new Promise((resolve) =>
-    //     depositTokens(1500, memberWallet).then(resolve)
-    //   ),
-    // () =>
-    //   new Promise((resolve) =>
-    //     claimRewards(program.provider.connection, memberWallet).then(resolve)
-    //   ),
-    // // () => new Promise((resolve) => openDraw(1000).then(resolve)),
-    // () =>
-    //   new Promise((resolve) =>
-    //     enterDraw(
+    //     openDraw(
     //       program.provider.connection,
     //       giveawayId,
     //       drawNo,
-    //       1000,
-    //       memberWallet
+    //       appWallet
     //     ).then(resolve)
     //   ),
+    () =>
+      new Promise((resolve) =>
+        enterDraw(
+          program.provider.connection,
+          giveawayId,
+          drawNo,
+          rewardMint,
+          1,
+          memberWallet
+        ).then(resolve)
+      ),
+    () =>
+      new Promise((resolve) =>
+        enterDraw(
+          program.provider.connection,
+          giveawayId,
+          drawNo,
+          rewardMint,
+          3,
+          memberWallet
+        ).then(resolve)
+      ),
+    () =>
+      new Promise((resolve) =>
+        enterDraw(
+          program.provider.connection,
+          giveawayId,
+          drawNo,
+          rewardMint,
+          1,
+          memberWallet
+        ).then(resolve)
+      ),
     // () => new Promise((resolve) => releaseTokens(500).then(resolve)),
     // () => new Promise((resolve) => withdrawTokens().then(resolve)),
     // () => new Promise((resolve) => claimRewards(3500).then(resolve)),
@@ -165,24 +174,36 @@ const memberWallet = new web3.Keypair(),
   );
   const rewardsAccount = await spl.getAccount(
     program.provider.connection,
-    rewardsTokenAccount,
+    rewardsTokenAccount.address,
     "confirmed",
     spl.TOKEN_PROGRAM_ID
   );
   const sourceAccount = await spl.getAccount(
     program.provider.connection,
-    sourceTokenAccount,
+    sourceTokenAccount.address,
     "confirmed",
     spl.TOKEN_PROGRAM_ID
   );
+  const drawAccount = findDrawAccount(giveawayId, drawNo);
+  const drawState = await program.account.drawAccount.fetch(drawAccount);
+  const ticketAddress = findTicketAccountAddress(
+    giveawayId,
+    drawNo,
+    memberWallet.publicKey
+  );
+  const ticketState = await program.account.ticketAccount.fetch(ticketAddress);
+  const allTickets = await findAllTickets(memberWallet.publicKey);
 
   console.log("----------- ADDRESSES -------------");
   console.log("Token Mint        :", mint.toBase58());
-  console.log("  | Source account:", sourceTokenAccount.toBase58());
-  console.log("     > Original   :", amount.div(decimalFactor).toString());
-  console.log("     > Remaining  :", sourceAccount.amount);
+  console.log("  | Source account:", sourceTokenAccount.address.toBase58());
+  console.log(
+    "     > Original   :",
+    initialMintBalance.div(decimalFactor).toString()
+  );
+  console.log("     > Remaining  :", lamportsToNumber(sourceAccount.amount));
   console.log("Entry Mint        :", rewardMint.toBase58());
-  console.log("  | Source account:", rewardsTokenAccount.toBase58());
+  console.log("  | Source account:", rewardsTokenAccount.address.toBase58());
   console.log(
     "     > Balance    :",
     Number(rewardsAccount.amount) / Math.pow(10, 4)
@@ -213,6 +234,16 @@ const memberWallet = new web3.Keypair(),
   );
   console.log("     > Slots      :", subscriptionState.slots.length);
   console.log("  | Vault account :", vaultTokenAccount.toBase58());
-  console.log("     > Amount     :", vaultAccount.amount);
+  console.log("     > Amount     :", lamportsToNumber(vaultAccount.amount));
+  console.log("Draw              :", drawAccount.toBase58());
+  console.log("   > Giveaway ID  :", drawState.giveawayId.toNumber());
+  console.log("   > Draw ID      :", drawState.drawId.toNumber());
+  console.log("   > Entries      :", drawState.totalEntries.toNumber());
+  console.log("   > Status       :", drawState.status.toString());
+  console.log("Ticket            :", ticketAddress.toBase58());
+  console.log("   > Giveaway ID  :", ticketState.giveawayId.toNumber());
+  console.log("   > Draw ID      :", ticketState.drawId.toNumber());
+  console.log("   > Entries      :", ticketState.totalEntries.toNumber());
+  console.log("Total Tickets     :", allTickets.length);
   console.log("-----------------------------------");
 })();

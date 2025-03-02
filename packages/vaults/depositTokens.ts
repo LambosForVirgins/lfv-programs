@@ -13,7 +13,9 @@ export const depositTokens = async (amount: number, signer: Keypair) => {
   const amountToAdd = new BN(amount).mul(decimalFactor); // TODO: Make this a utility function with the decimalFactor
 
   try {
-    const subscriptionAccount = findSubscriptionAccountAddress(signer),
+    const subscriptionAccount = findSubscriptionAccountAddress(
+        signer.publicKey
+      ),
       vaultAccount = findVaultAccountAddress(MINT_ADDRESS, signer);
     // Token accounts
     const destinationTokenAccount = getAssociatedTokenAddressSync(

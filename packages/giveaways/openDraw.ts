@@ -12,6 +12,13 @@ export const openDraw = async (
   try {
     const draw = findDrawAccount(giveawayId, drawNo);
 
+    console.log(
+      "Open draw",
+      drawNo.toNumber(),
+      "giveaway",
+      giveawayId.toNumber()
+    );
+
     const enterDrawTransaction = await program.methods
       .openDraw(giveawayId, drawNo)
       .accounts({

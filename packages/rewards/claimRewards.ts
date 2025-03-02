@@ -1,35 +1,33 @@
-import { Connection, Keypair, SystemProgram } from "@solana/web3.js";
-import { ENTRY_MINT_ADDRESS, program } from "../../client/constants";
-import {
-  getAssociatedTokenAddressSync,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import { findSubscriptionAccountAddress } from "@/pda";
+import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { getInitializeRewardTokenAccountInstruction } from "./getInitializeRewardTokenAccountInstruction";
+import { getClaimRewardsTransaction } from "./getClaimRewardsInstruction";
+import { Logger } from "@/tools/Logger";
 
-export const claimRewards = async (connection: Connection, signer: Keypair) => {
+export const claimRewards = async (
+  connection: Connection,
+  signer: Keypair,
+  rewardTokenAccount: PublicKey
+) => {
   try {
-    const subscriptionAccount = findSubscriptionAccountAddress(signer);
+    const transaction = new Transaction();
 
-    const rewardTokenAccount = getAssociatedTokenAddressSync(
-      ENTRY_MINT_ADDRESS,
-      signer.publicKey
+    if (!rewardTokenAccount) {
+      // TODO: This doesn't generate the correct program derived address for the seed
+      transaction.add(
+        getInitializeRewardTokenAccountInstruction(signer.publicKey)
+      );
+    }
+
+    transaction.add(
+      await getClaimRewardsTransaction(signer.publicKey, rewardTokenAccount)
     );
 
-    const claimTransaction = await program.methods
-      .claim()
-      .accounts({
-        subscription: subscriptionAccount,
-        mint: ENTRY_MINT_ADDRESS,
-        destinationTokenAccount: rewardTokenAccount,
-        signer: signer.publicKey,
-        systemProgram: SystemProgram.programId, // TODO: Remove this
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([signer])
-      .rpc();
+    const txHash = await connection.sendTransaction(transaction, [signer], {
+      skipPreflight: false,
+    });
     // Confirm transaction
-    await connection.confirmTransaction(claimTransaction);
-    console.log("Claimed:", claimTransaction);
+    await connection.confirmTransaction(txHash, "finalized");
+    Logger.success("Claimed rewards", txHash);
   } catch (err) {
     console.error("Claim", err);
   }

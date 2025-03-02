@@ -3,10 +3,15 @@ import { MINT_ADDRESS, program } from "../../client/constants";
 import spl from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { readFileSync } from "fs";
+import { Logger } from "@/tools/Logger";
 
 const tokenMint = MINT_ADDRESS;
 
+export const lamportsToNumber = (lamports: bigint) =>
+  Number(lamports) / web3.LAMPORTS_PER_SOL;
+
 export const sleep = (ms: number): Promise<void> => {
+  Logger.info(`Sleeping...`, `${ms}ms`);
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 

@@ -6,7 +6,9 @@ import { Logger } from "@/tools/Logger";
 
 export const initializeSubscriptionAccount = async (signer: Keypair) => {
   try {
-    const subscriptionAccount = findSubscriptionAccountAddress(signer),
+    const subscriptionAccount = findSubscriptionAccountAddress(
+        signer.publicKey
+      ),
       vaultAccount = findVaultAccountAddress(MINT_ADDRESS, signer);
     // Initialize member account
     const initTransaction = await program.methods

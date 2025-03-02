@@ -33,10 +33,6 @@ export const MINT_ADDRESS = new PublicKey(
   "LFVqPrRGnwYdCwFcDzShBxN2GMFmD4AoCMrjxjq4xdz"
 );
 
-export const ENTRY_MINT_ADDRESS = new PublicKey(
-  "8MvGosSYqUBwpKTJZp2oQHM2siNaPNcA4dAeHehqR1wr"
-);
-
 export const program = new anchor.Program<RewardProgram>(
   IDL as RewardProgram,
   REWARD_PROGRAM_ID

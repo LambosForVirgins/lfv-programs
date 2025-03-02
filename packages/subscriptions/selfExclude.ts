@@ -6,7 +6,7 @@ const selfExclude = async (signer: Keypair) => {
   if (!("exclude" in program.methods))
     throw new Error("Method 'exclude' not found");
 
-  const subscriptionAccount = findSubscriptionAccountAddress(signer);
+  const subscriptionAccount = findSubscriptionAccountAddress(signer.publicKey);
   // Self exclude member account
   const excludeTransaction = await program.methods
     .exclude()

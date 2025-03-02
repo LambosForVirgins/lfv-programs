@@ -8,7 +8,9 @@ import {
 
 export const withdrawTokens = async (signer: Keypair) => {
   try {
-    const subscriptionAccount = findSubscriptionAccountAddress(signer),
+    const subscriptionAccount = findSubscriptionAccountAddress(
+        signer.publicKey
+      ),
       vaultAccount = findVaultAccountAddress(MINT_ADDRESS, signer);
     // Token accounts
     const vaultTokenAccount = getAssociatedTokenAddressSync(
