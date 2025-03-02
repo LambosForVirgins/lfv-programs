@@ -93,10 +93,6 @@ mod reward_program {
         Ok(())
     }
 
-    // pub fn redeem(ctx: Context<RedeemAccounts>) -> Result<()> {
-    //     // Should redeem the entries into the giveaway draw
-    // }
-
     pub fn claim(ctx: Context<ClaimAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
@@ -123,9 +119,9 @@ mod reward_program {
 
     pub fn release(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
-        let vault: &mut Account<TokenAccount> = &mut ctx.accounts.source_token_account;
+        let vault: &mut Account<TokenAccount> = &mut ctx.accounts.vault_token_account;
         let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
-        // Validate time before reassinging to u64
+        // Validate time before reassigning to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Check vault token account has sufficient balance
         require!(amount <= vault.amount, TransferError::InvalidBalance);

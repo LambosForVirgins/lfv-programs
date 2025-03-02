@@ -9,8 +9,8 @@ constants = "LFV1t2uUvpEZuhduXTepyimVJ35ZANUThNPH8yp1w7o"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+cluster = "Devnet"
+wallet = "./keys/APP1udKK1p1G7eE3PeTHp5qo8FDTAzmxC5buW7Luss3B.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

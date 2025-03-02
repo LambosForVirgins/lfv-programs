@@ -1,9 +1,9 @@
 {
     "packageManager": "yarn@4.6.0",
     "scripts": {
-        "build": "",
-        "deploy": "",
-        "start": "",
+        "build": "anchor build",
+        "deploy": "anchor deploy",
+        "start": "ANCHOR_WALLET=\"keys/9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU.json\" ANCHOR_PROVIDER_URL=\"https://api.devnet.solana.com\" ts-node -r tsconfig-paths/register ./client/client.ts",
         "test": "",
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
