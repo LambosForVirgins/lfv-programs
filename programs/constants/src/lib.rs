@@ -25,7 +25,7 @@ mod reward_program {
 
     pub fn initialize(ctx: Context<InitializeAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
-        // Validate time before reassinging to u64
+        // Validate time before reassigning to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Update timestamps
         ctx.accounts.subscription.time_created = time_now as u64;
