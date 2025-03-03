@@ -3,7 +3,11 @@ import BN from "bn.js";
 import assert from "assert";
 import * as web3 from "@solana/web3.js";
 import spl from "@solana/spl-token";
-import type { Constants } from "../target/types/constants";
+import { program } from "../client/constants";
+import {
+  findSubscriptionAccountAddress,
+  findVaultAccountAddress,
+} from "../packages/pda";
 const DECIMALS = 9;
 const AMOUNT = 100;
 
@@ -14,48 +18,26 @@ const assertErrorAsync = async (
   try {
     await fn;
     assert.fail();
-  } catch (error) {
+  } catch (error: any) {
     assert(error.message === message);
   }
 };
 
 const getTokenBalance = async (tokenAccount: web3.PublicKey): Promise<BN> => {
   return await spl
-    .getAccount(program.provider.connection, tokenAccount, "confirmed", spl.TOKEN_PROGRAM_ID)
+    .getAccount(
+      program.provider.connection,
+      tokenAccount,
+      "confirmed",
+      spl.TOKEN_PROGRAM_ID
+    )
     .then((info) => new BN(Number(info.amount)));
 };
 
-const findMemberAccount = (signer: web3.Keypair) => {
-  const [pda] = web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("member_account"), signer.publicKey.toBuffer()],
-    program.programId
-  );
-
-  return pda;
-};
-
-const findVaultTokenAccountAddress = (
-  mint: web3.PublicKey,
-  signer: web3.Keypair
-) => {
-  const [pda] = web3.PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("vault_token_account"),
-      mint.toBuffer(),
-      signer.publicKey.toBuffer(),
-    ],
-    program.programId
-  );
-
-  return pda;
-};
-
-describe("Member Locker", async () => {
+describe("Rewards Program", async () => {
   // Configure the client to use the local cluster
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.Constants as anchor.Program<Constants>;
-  
   const memberWallet = new web3.Keypair(),
     adminWallet = pg.wallets.app.keypair,
     tokenMint = pg.wallets.mint.keypair,
@@ -93,11 +75,15 @@ describe("Member Locker", async () => {
         )
       );
 
-      const signature = await program.provider.connection.sendTransaction(transaction, [
-        adminWallet,
-      ]);
+      const signature = await program.provider.connection.sendTransaction(
+        transaction,
+        [adminWallet]
+      );
 
-      await program.provider.connection.confirmTransaction(signature, "confirmed");
+      await program.provider.connection.confirmTransaction(
+        signature,
+        "confirmed"
+      );
 
       tokenAccount = spl.getAssociatedTokenAddressSync(
         tokenMint.publicKey,
@@ -118,7 +104,7 @@ describe("Member Locker", async () => {
       );
     });
 
-    it("member has adequete token mint balance", async () => {
+    it("member has adequate token mint balance", async () => {
       const balance = await getTokenBalance(tokenAccount);
       assert(
         balance.sub(amount).toNumber() > 0,
@@ -134,8 +120,8 @@ describe("Member Locker", async () => {
 
     before(async () => {
       // Generate member program account keys
-      memberAccount = findMemberAccount(memberWallet);
-      vaultTokenAccount = findVaultTokenAccountAddress(
+      memberAccount = findSubscriptionAccountAddress(memberWallet);
+      vaultTokenAccount = findVaultAccountAddress(
         tokenMint.publicKey,
         memberWallet
       );
@@ -222,9 +208,8 @@ describe("Member Locker", async () => {
 
     describe.skip("member account state", () => {
       it.skip("created membership account", async () => {
-        const membership = await program.account.memberAccount.fetch(
-          memberAccount
-        );
+        const membership =
+          await program.account.memberAccount.fetch(memberAccount);
         assert(
           membership.totalAmount.eq(new BN(0)),
           "Account balance is greater than zero"
@@ -243,8 +228,8 @@ describe("Member Locker", async () => {
       amount = new BN(AMOUNT * Math.pow(10, DECIMALS));
 
     before(async () => {
-      memberAccount = findMemberAccount(memberWallet);
-      vaultTokenAccount = findVaultTokenAccountAddress(
+      memberAccount = findSubscriptionAccountAddress(memberWallet);
+      vaultTokenAccount = findVaultAccountAddress(
         tokenMint.publicKey,
         memberWallet
       );
@@ -344,8 +329,8 @@ describe("Member Locker", async () => {
 
     before(async () => {
       // Derive the global and member pool address
-      memberAccount = findMemberAccount(memberWallet);
-      vaultTokenAccount = findVaultTokenAccountAddress(
+      memberAccount = findSubscriptionAccountAddress(memberWallet);
+      vaultTokenAccount = findVaultAccountAddress(
         tokenMint.publicKey,
         memberWallet
       );
@@ -424,46 +409,6 @@ describe("Member Locker", async () => {
     it.skip("rewards tokens accross multiple epochs");
     it.skip("update time rewarded after reward");
     it.skip("does not reward unlocked tokens");
-  });
-
-  describe("Self exclusion", () => {
-    let memberAccount: web3.PublicKey;
-
-    before(async () => {
-      memberAccount = findMemberAccount(memberWallet);
-    });
-
-    it("fails to exclude member when not signer", async () => {
-      console.log(memberAccount.toBase58());
-      await assertErrorAsync(
-        program.methods
-          .exclude()
-          .accounts({
-            memberAccount,
-            signer: adminWallet.publicKey,
-          })
-          .signers([adminWallet])
-          .rpc(),
-        "Forbidden exclusion signer"
-      );
-    });
-
-    it("updates the member status when signer", async () => {
-      const txHash = await program.methods
-        .exclude()
-        .accounts({
-          memberAccount,
-          signer: memberWallet.publicKey,
-        })
-        .signers([memberWallet])
-        .rpc();
-      // Confirm transaction
-      await program.provider.connection.confirmTransaction(txHash);
-
-      assert(txHash);
-    });
-
-    it.skip("fails to update status when excluded");
   });
 
   after(() => {
