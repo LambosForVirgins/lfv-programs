@@ -4,10 +4,7 @@ import assert from "assert";
 import * as web3 from "@solana/web3.js";
 import spl from "@solana/spl-token";
 import { program } from "../client/constants";
-import {
-  findSubscriptionAccountAddress,
-  findVaultAccountAddress,
-} from "../packages/pda";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
 const DECIMALS = 9;
 const AMOUNT = 100;
 
@@ -34,21 +31,26 @@ const getTokenBalance = async (tokenAccount: web3.PublicKey): Promise<BN> => {
     .then((info) => new BN(Number(info.amount)));
 };
 
+// Configure the client to use the local cluster
+anchor.setProvider(anchor.AnchorProvider.env());
+
 describe("Rewards Program", async () => {
-  // Configure the client to use the local cluster
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const wallets = {
+    app: new web3.Keypair(),
+    mint: new web3.Keypair(),
+    gift: new web3.Keypair(),
+  };
 
   const memberWallet = new web3.Keypair(),
-    adminWallet = pg.wallets.app.keypair,
-    tokenMint = pg.wallets.mint.keypair,
-    entryMint = pg.wallets.gift.keypair;
+    adminWallet = wallets.app,
+    tokenMint = wallets.mint;
 
   const amount = new BN(AMOUNT * Math.pow(10, DECIMALS));
 
   describe("Precheck test data requirements", () => {
     let tokenAccount: web3.PublicKey;
 
-    before(async () => {
+    beforeAll(async () => {
       tokenAccount = await spl.createAssociatedTokenAccount(
         program.provider.connection,
         adminWallet,
@@ -118,7 +120,7 @@ describe("Rewards Program", async () => {
       vaultTokenAccount: web3.PublicKey,
       associatedTokenAccount: spl.Account;
 
-    before(async () => {
+    beforeAll(async () => {
       // Generate member program account keys
       memberAccount = findSubscriptionAccountAddress(memberWallet);
       vaultTokenAccount = findVaultAccountAddress(
@@ -227,7 +229,7 @@ describe("Rewards Program", async () => {
       vaultStartingBalance: BN,
       amount = new BN(AMOUNT * Math.pow(10, DECIMALS));
 
-    before(async () => {
+    beforeAll(async () => {
       memberAccount = findSubscriptionAccountAddress(memberWallet);
       vaultTokenAccount = findVaultAccountAddress(
         tokenMint.publicKey,
@@ -327,7 +329,7 @@ describe("Rewards Program", async () => {
 
     const amount = new BN(AMOUNT * Math.pow(10, DECIMALS));
 
-    before(async () => {
+    beforeAll(async () => {
       // Derive the global and member pool address
       memberAccount = findSubscriptionAccountAddress(memberWallet);
       vaultTokenAccount = findVaultAccountAddress(
@@ -411,7 +413,7 @@ describe("Rewards Program", async () => {
     it.skip("does not reward unlocked tokens");
   });
 
-  after(() => {
+  afterAll(() => {
     /**
      * Allowing a disabled slot to be re-enabled opens up a
      * re-entry attack where the member recieves rewards and

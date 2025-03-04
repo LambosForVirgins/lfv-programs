@@ -14,9 +14,7 @@
     "incremental": true,
     "plugins": [],
     "types": [
-      "vitest/globals",
-      "mocha",
-      "chai"
+      "vitest/globals"
     ],
     "paths": {
       "@/*": [

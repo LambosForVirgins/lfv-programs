@@ -13,12 +13,15 @@ describe("Member self exclusion", async () => {
   // Configure the client to use the local cluster
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const pg = anchor.getProvider();
+  const wallets = {
+    app: new web3.Keypair(),
+    mint: new web3.Keypair(),
+    gift: new web3.Keypair(),
+  };
 
   const memberWallet = new web3.Keypair(),
-    adminWallet = pg.wallets.app.keypair,
-    tokenMint = pg.wallets.mint.keypair,
-    entryMint = pg.wallets.gift.keypair;
+    adminWallet = wallets.app,
+    tokenMint = wallets.mint;
 
   const amount = new BN(AMOUNT * Math.pow(10, DECIMALS));
 
@@ -55,7 +58,7 @@ describe("Member self exclusion", async () => {
   describe("Self exclusion", () => {
     let memberAccount: web3.PublicKey;
 
-    before(async () => {
+    beforeAll(async () => {
       memberAccount = findSubscriptionAccountAddress(memberWallet);
     });
 
