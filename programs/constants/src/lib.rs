@@ -50,12 +50,12 @@ mod reward_program {
         token::transfer(ctx.accounts.initialize_deposit_context(), amount)?;
         // Update subscription account with deposit and reallocate account memory
         ctx.accounts.subscription.lock(amount, time_now as u64)?;
-
+        // Reallocate memory for updated slots
         ctx.accounts.subscription.realloc(
             &ctx.accounts.subscription.to_account_info(),
             &ctx.accounts.signer.to_account_info(),
             &ctx.accounts.system_program.to_account_info(),
-        );
+        )?;
 
         sol_log_compute_units();
         Ok(())
@@ -93,14 +93,15 @@ mod reward_program {
         // Check vault token account has sufficient balance
         require!(amount <= vault.amount, TransferError::InvalidBalance);
         // Update pool attributes
-        subscription.unlock(amount, time_now as u64)?;
+        let released = subscription.unlock(amount, time_now as u64).unwrap();
         // Resize allocated space for member account
         ctx.accounts.subscription.realloc(
             &ctx.accounts.subscription.to_account_info(),
             &ctx.accounts.signer.to_account_info(),
             &ctx.accounts.system_program.to_account_info(),
         )?;
-
+        
+        
         sol_log_compute_units();
         Ok(())
     }
@@ -112,7 +113,7 @@ mod reward_program {
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Request the transfer amount
         let amount = subscription.on_withdraw(time_now as u64)?;
-        // Vlaidate the transfer amount
+        // Validate the transfer amount
         if amount > 0 {
             let bump = ctx.bumps.subscription;
             let signer_key = ctx.accounts.signer.key();
