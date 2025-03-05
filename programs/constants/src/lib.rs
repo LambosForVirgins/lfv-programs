@@ -93,7 +93,7 @@ mod reward_program {
         // Check vault token account has sufficient balance
         require!(amount <= vault.amount, TransferError::InvalidBalance);
         // Update pool attributes
-        let released = subscription.unlock(amount, time_now as u64).unwrap();
+        subscription.unlock(amount, time_now as u64)?;
         // Resize allocated space for member account
         ctx.accounts.subscription.realloc(
             &ctx.accounts.subscription.to_account_info(),
