@@ -1,9 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::log::sol_log_compute_units;
-use anchor_spl::{
-    metadata::{create_metadata_accounts_v3, mpl_token_metadata::types::DataV2},
-    token::{self, TokenAccount},
-};
+use anchor_spl::token::{self, TokenAccount};
 
 use constants::*;
 use errors::*;
@@ -96,7 +93,7 @@ mod reward_program {
         // Check vault token account has sufficient balance
         require!(amount <= vault.amount, TransferError::InvalidBalance);
         // Update pool attributes
-        let released = subscription.unlock(amount, time_now as u64).unwrap();
+        subscription.unlock(amount, time_now as u64)?;
         // Resize allocated space for member account
         ctx.accounts.subscription.realloc(
             &ctx.accounts.subscription.to_account_info(),
