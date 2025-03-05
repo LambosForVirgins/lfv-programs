@@ -38,7 +38,7 @@ mod reward_program {
     pub fn deposit(ctx: Context<TransferAccounts>, amount: u64) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let source: &mut Account<TokenAccount> = &mut ctx.accounts.source_token_account;
-        // Validate time before reassinging to u64
+        // Validate time before reassigning to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Validate the amount in valid range
         require!(amount > 0, TransferError::InvalidAmount);
@@ -67,7 +67,7 @@ mod reward_program {
     pub fn claim(ctx: Context<ClaimAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
-        // Validate time before reassinging to u64
+        // Validate time before reassigning to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
 
         let rewards = subscription.claim(time_now as u64).unwrap();
@@ -111,7 +111,7 @@ mod reward_program {
     pub fn withdraw(ctx: Context<TransferAccounts>) -> Result<()> {
         let time_now: i64 = Clock::get()?.unix_timestamp;
         let subscription: &mut Account<SubscriptionAccount> = &mut ctx.accounts.subscription;
-        // Validate time before reassinging to u64
+        // Validate time before reassigning to u64
         require!(time_now > 0, HostError::InvalidTimestamp);
         // Request the transfer amount
         let amount = subscription.on_withdraw(time_now as u64)?;
