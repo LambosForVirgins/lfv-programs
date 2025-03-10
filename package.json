@@ -14,7 +14,10 @@
         "deploy": "anchor deploy",
         "deploy:ci": "solana program deploy -u \"https://api.devnet.solana.com\" target/deploy/constants.so --program-id 9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU --with-compute-unit-price 50000 --max-sign-attempts 100",
         "start": "ANCHOR_WALLET=\"keys/9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU.json\" ANCHOR_PROVIDER_URL=\"https://api.devnet.solana.com\" ts-node -r tsconfig-paths/register ./client/client.ts",
-        "test": "DEBUG=vite-tsconfig-paths  vitest",
+        "__tests__":"",
+        "test": "vitest",
+        "test:utils": "vitest --project utilities",
+        "test:programs": "vitest --project programs",
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
     },
