@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount, Transfer};
 use crate::{
     constants::{MINT_KEY, SUBSCRIPTION_SEED_PREFIX, VAULT_SEED_PREFIX},
-    state::subscription::SubscriptionAccount,
+    state::SubscriptionAccountV2,
 };
 
 #[derive(Accounts)]
@@ -11,13 +11,15 @@ pub struct TransferAccounts<'info> {
         seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump
     )]
-    pub subscription: Account<'info, SubscriptionAccount>,
+    pub subscription: Account<'info, SubscriptionAccountV2>,
 
-    #[account(mut,
+    #[account(
+        init_if_needed,
+        payer = signer,
         seeds = [VAULT_SEED_PREFIX, mint.key().as_ref(), signer.key().as_ref()],
         token::mint = mint,
         token::authority = subscription,
-        bump
+        bump,
     )]
     pub vault_token_account: Account<'info, TokenAccount>,
 

@@ -1,6 +1,11 @@
 import { defineWorkspace } from "vitest/config";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { config as dotenvConfig } from "dotenv";
 import path from "path";
+
+dotenvConfig({
+  path: ".env",
+});
 
 export default defineWorkspace([
   {
