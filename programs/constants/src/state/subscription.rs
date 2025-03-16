@@ -1,17 +1,21 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction::*};
 use crate::{
-    constants::*, errors::TransferError, slots::Transaction, status::AccountStatus,
+    constants::*,
+    errors::TransferError,
+    transaction::Transaction,
+    status::AccountStatus,
     tiers::MemberTier, utils::*,
 };
-use solana_program::program_pack::IsInitialized;
+// use solana_program::program_pack::IsInitialized;
 
 #[account]
 pub struct SubscriptionAccount {
     /** Schema version from v0 up to v255. Defaults to the `LATEST_VERSION` constant. */
     pub version: u8,
-    /** Persists the tier of the greatest filled subscription slot */
+    /** Current membership tier according to the total locked tokens */
     pub tier: u8,
+    /** Members account status */
     pub status: u8,
     /** Total amount of tokens managed by the account */
     pub total_amount: u64,
@@ -25,7 +29,7 @@ pub struct SubscriptionAccount {
     pub time_created: u64,
     /** Date of the last reward granted to matured tokens */
     pub time_rewarded: u64,
-    /** Collection of locked token deposit slots (one entry per deposit) */
+    /** Collection of locked slots */
     pub slots: Vec<Transaction>,
 }
 
@@ -48,7 +52,7 @@ impl SubscriptionAccount {
 
     pub fn lock(&mut self, amount: u64, time_now: u64) -> Result<()> {
         // Mature existing slots
-        self.mature_slots(time_now);
+        self.mature_slots(time_now)?;
         // Update locked amount counter
         self.total_amount += amount;
         // Immediately grant entries
@@ -118,9 +122,8 @@ impl SubscriptionAccount {
     }
 
     pub fn on_withdraw(&mut self, time_now: u64) -> Result<u64> {
-        // Mature withdarwal slots for release
+        // Mature withdrawal slots for release
         self.mature_slots(time_now)?; // TODO: Handle error
-
         // Get the updated release amount
         let amount = self.total_released;
 
@@ -196,11 +199,6 @@ impl SubscriptionAccount {
     }
 }
 
-impl IsInitialized for SubscriptionAccount {
-    fn is_initialized(&self) -> bool {
-        AccountStatus::not(AccountStatus::Pending, self.status)
-    }
-}
 
 impl Default for SubscriptionAccount {
     fn default() -> Self {

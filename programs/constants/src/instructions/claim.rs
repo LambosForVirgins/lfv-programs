@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, MintTo, Token, TokenAccount};
 
 use crate::{
     constants::{REWARDS_SEED_PREFIX, SUBSCRIPTION_SEED_PREFIX},
-    state::subscription::SubscriptionAccount,
+    state::SubscriptionAccountV2,
 };
 
 #[derive(Accounts)]
@@ -12,7 +12,7 @@ pub struct ClaimAccounts<'info> {
         seeds = [SUBSCRIPTION_SEED_PREFIX, signer.key().as_ref()],
         bump
     )]
-    pub subscription: Account<'info, SubscriptionAccount>,
+    pub subscription: Account<'info, SubscriptionAccountV2>,
 
     #[account(mut,
         seeds = [REWARDS_SEED_PREFIX],
