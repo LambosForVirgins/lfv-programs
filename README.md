@@ -32,7 +32,7 @@ LFVqPrRGnwYdCwFcDzShBxN2GMFmD4AoCMrjxjq4xdz
 #### Rewards Program
 
 ```
-Unknown
+9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU
 ```
 
 #### Rewards Mint

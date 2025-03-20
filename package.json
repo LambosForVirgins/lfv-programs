@@ -1,12 +1,26 @@
 {
+    "name": "lfv-programs",
+    "version": "1.0.1",
+    "private": true,
+    "engines": {
+        "node": "20.x"
+    },
     "packageManager": "yarn@4.6.0",
     "scripts": {
-        "build": "",
-        "deploy": "",
-        "start": "",
-        "test": "",
+        "build": "anchor build",
+        "build:ci": "solana-verify build",
+        "hash": "solana-verify get-executable-hash target/deploy/constants.so",
+        "verify": "solana-verify get-program-hash -u \"https://api.devnet.solana.com\" 9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU",
+        "deploy": "anchor deploy",
+        "deploy:ci": "solana program deploy -u \"https://api.devnet.solana.com\" target/deploy/constants.so --program-id 9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU --with-compute-unit-price 50000 --max-sign-attempts 100",
+        "start": "ANCHOR_WALLET=\"keys/9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU.json\" ANCHOR_PROVIDER_URL=\"https://api.devnet.solana.com\" ts-node -r tsconfig-paths/register ./client/client.ts",
+        "test": "DEBUG=vite-tsconfig-paths  vitest",
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+        "__setup__": "",
+        "setup:list": "ts-node changeSolanaConfig.ts list",
+        "setup:dev": "ts-node ./scripts/setup.ts apply development",
+        "setup:prod": "ts-node ./scripts/setup.ts apply production"
     },
     "dependencies": {
         "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
@@ -16,15 +30,17 @@
         "bn.js": "^5.2.1"
     },
     "devDependencies": {
-        "@coral-xyz/anchor": "^0.30.1",
+        "@coral-xyz/anchor": "0.29.0",
         "@types/bn.js": "^5.1.1",
-        "@types/chai": "^4.3.5",
-        "@types/mocha": "^10.0.1",
         "@types/node": "^22.10.10",
-        "chai": "^4.3.8",
-        "mocha": "^10.2.0",
+        "colorts": "^0.1.63",
+        "commander": "^13.1.0",
+        "dotenv": "^16.4.7",
         "prettier": "^3.0.2",
-        "ts-mocha": "^10.0.0",
-        "typescript": "^5.2.2"
+        "ts-node": "^10.9.2",
+        "tsconfig-paths": "^4.2.0",
+        "typescript": "^5.2.2",
+        "vite-tsconfig-paths": "^5.1.4",
+        "vitest": "^3.0.7"
     }
 }

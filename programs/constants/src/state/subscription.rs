@@ -146,7 +146,8 @@ impl SubscriptionAccount {
                         matured_change += amount;
                         // Determine how many reward cycles have elapsed since maturity
                         let epoch_length: u64 = time_matured - time_created;
-                        let outstanding_cycles: u64 = (time_now - time_matured) / epoch_length;
+                        // Adds an additional cycle because the maturation has completed (1 cycle)
+                        let outstanding_cycles: u64 = (time_now - time_matured) / epoch_length + 1;
                         matured_rewards += lamports_to_rewards(outstanding_cycles * amount);
                     }
                     Transaction::Withdraw { amount, .. } => {
