@@ -2,12 +2,18 @@
     {
       "name": "development",
       "url": "https://api.devnet.solana.com",
-      "wallet": "/Users/mitch/Developer/lfv-programs/keys/APP1udKK1p1G7eE3PeTHp5qo8FDTAzmxC5buW7Luss3B.json"
+      "wallet": "/Users/mitch/Developer/lfv-programs/keys/APP1udKK1p1G7eE3PeTHp5qo8FDTAzmxC5buW7Luss3B.json",
+      "programId": "9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU",
+      "tokenMint": "LFVqPrRGnwYdCwFcDzShBxN2GMFmD4AoCMrjxjq4xdz",
+      "rewardMint": "45mojsRsPZGwb5cmkx5fpqsu3ZZWXHfaV55vHZtSrQkp"
     },
     {
       "name": "production",
       "url": "https://practical-multi-diamond.solana-mainnet.quiknode.pro/9b31cd9dc3d514d5e7a007861e5e5455de1b920e/",
-      "wallet": "/Users/mitch/Developer/lfv-programs/keys/DEV4MxokMrwCXpnJPjWREazY4sbw37fVPPaWtuf559Qp.json"
+      "wallet": "/Users/mitch/Developer/lfv-programs/keys/DEV4MxokMrwCXpnJPjWREazY4sbw37fVPPaWtuf559Qp.json",
+      "programId": "LFV1t2uUvpEZuhduXTepyimVJ35ZANUThNPH8yp1w7o",
+      "tokenMint": "7kB8ZkSBJr2uiBWfveqkVBN7EpZMFom5PqeWUB62DCRD",
+      "rewardMint": "HPybaeG784op36sXYHRfL46Eaw72JiYMpPih2w8F6whM"
     }
   ]
   
