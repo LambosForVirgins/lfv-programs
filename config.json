@@ -1,0 +1,13 @@
+[
+    {
+      "name": "development",
+      "url": "https://api.devnet.solana.com",
+      "wallet": "/Users/mitch/Developer/lfv-programs/keys/APP1udKK1p1G7eE3PeTHp5qo8FDTAzmxC5buW7Luss3B.json"
+    },
+    {
+      "name": "production",
+      "url": "https://practical-multi-diamond.solana-mainnet.quiknode.pro/9b31cd9dc3d514d5e7a007861e5e5455de1b920e/",
+      "wallet": "/Users/mitch/Developer/lfv-programs/keys/DEV4MxokMrwCXpnJPjWREazY4sbw37fVPPaWtuf559Qp.json"
+    }
+  ]
+  

@@ -16,7 +16,11 @@
         "start": "ANCHOR_WALLET=\"keys/9QZ5nMuz1cH4Nb7mWwSDrXy5zMWg1DT6TSjdgga933wU.json\" ANCHOR_PROVIDER_URL=\"https://api.devnet.solana.com\" ts-node -r tsconfig-paths/register ./client/client.ts",
         "test": "DEBUG=vite-tsconfig-paths  vitest",
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+        "__setup__": "",
+        "setup:list": "ts-node changeSolanaConfig.ts list",
+        "setup:dev": "ts-node ./scripts/setup.ts apply development",
+        "setup:prod": "ts-node ./scripts/setup.ts apply production"
     },
     "dependencies": {
         "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
@@ -30,6 +34,7 @@
         "@types/bn.js": "^5.1.1",
         "@types/node": "^22.10.10",
         "colorts": "^0.1.63",
+        "commander": "^13.1.0",
         "dotenv": "^16.4.7",
         "prettier": "^3.0.2",
         "ts-node": "^10.9.2",
