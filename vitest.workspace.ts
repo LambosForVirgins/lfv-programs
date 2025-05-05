@@ -6,8 +6,8 @@ export default defineWorkspace([
     // add "extends" to merge two configs together
     // extends: './vite.config.js',
     test: {
-      // include: ['tests/**/*.{browser}.test.{ts,js}'],
-      name: "solana",
+      include: ["packages/**/*.test.{ts,js}"],
+      name: "packages",
       environment: "node",
       globals: true,
       setupFiles: "./setup.ts",
