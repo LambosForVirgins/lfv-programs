@@ -5,7 +5,7 @@
     "engines": {
         "node": "20.x"
     },
-    "packageManager": "yarn@4.6.0",
+    "packageManager": "yarn@4.9.1",
     "scripts": {
         "build": "anchor build",
         "build:ci": "solana-verify build",
