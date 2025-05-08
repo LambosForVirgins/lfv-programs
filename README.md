@@ -40,3 +40,50 @@ LFVqPrRGnwYdCwFcDzShBxN2GMFmD4AoCMrjxjq4xdz
 ```
 Unknown
 ```
+
+## Getting Started
+
+### Setup a local SUI environment and tools
+
+> [Sui setup documentation](https://docs.sui.io/guides/developer/getting-started)
+
+Install Sui and the Sui CLI tools by following the [instructions in the Sui documentation](https://docs.sui.io/guides/developer/getting-started/sui-install)
+
+```shell
+rustup update stable && cargo install --locked --git https://github.com/MystenLabs/sui.git --branch testnet sui --features tracing
+```
+
+Start a local Sui network
+
+```shell
+RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis
+```
+
+By default, when using sui start the command uses an existing genesis and network configuration if the `~/.sui/sui_config` folder exists and includes a `genesis.blob` file. If the folder doesn't exist, it creates the folder and generates a new genesis configuration. If you pass `--network.config`, the command checks for the network config file and tries to load the genesis blob as per the network config file.
+
+> Whenever you stop and start the network without passing the `--force-regenesis` flag, all history is preserved and accessible.
+
+Checking the local network node availability
+
+```shell
+curl --location --request POST 'http://127.0.0.1:9000' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "sui_getTotalTransactionBlocks",
+  "params": []
+}'
+```
+If successful, the response resembles the following:
+
+```json
+{
+	"jsonrpc": "2.0",
+	"result": 168,
+	"id": 1
+}
+```
+
+Connect the Sui CLI to your local network
+

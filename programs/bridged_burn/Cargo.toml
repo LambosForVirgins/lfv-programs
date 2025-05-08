@@ -1,12 +1,12 @@
 [package]
-name = "constants"
+name = "bridged_burn"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "Burn and reward bridging mechanism"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "constants"
+name = "bridged_burn"
 
 [features]
 no-entrypoint = []

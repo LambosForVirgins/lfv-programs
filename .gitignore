@@ -2,8 +2,16 @@
 .DS_Store
 target
 **/*.rs.bk
+
+# Dependencies
 node_modules
+/.pnp
+.pnp.js
+.pnp.cjs
+.pnp.mjs
+.yarn/install-state.gz
+.yarn/cache
+
 test-ledger
-.yarn
 keys
 .env
