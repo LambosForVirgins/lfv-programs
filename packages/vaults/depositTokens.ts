@@ -36,7 +36,7 @@ export const depositTokens = async (amount: number, signer: Keypair) => {
       .rpc();
     // Confirm transaction
     await program.provider.connection.confirmTransaction(transaction);
-    Logger.success("Deposited stake", amount.toString());
+    Logger.success("Deposited bond", amount.toString());
   } catch (err) {
     console.error("Deposit", err);
   }

@@ -1,13 +1,17 @@
 use anchor_lang::prelude::*;
 
 pub use slots::*;
+pub use transaction::*;
 pub use status::*;
 pub use subscription::*;
+pub use subscriptionv2::*;
 pub use tiers::*;
 
 pub mod slots;
+pub mod transaction;
 pub mod status;
 pub mod subscription;
+pub mod subscriptionv2;
 pub mod tiers;
 
 #[account]

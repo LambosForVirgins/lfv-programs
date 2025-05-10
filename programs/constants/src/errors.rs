@@ -14,6 +14,8 @@ pub enum TransferError {
 
 #[error_code]
 pub enum MemberError {
+    #[msg("Account can't be deserialized")]
+    AccountUnserializable,
     #[msg("Account suspended")]
     AccountSuspended,
     #[msg("Member account is disabled")]
@@ -32,6 +34,16 @@ pub enum LockingError {
     RewardsForbidden,
     #[msg("Insufficient lamport balance")]
     InsufficientFunds,
+}
+
+#[error_code]
+pub enum RewardError {
+    #[msg("Invalid epoch duration: time_matured must be greater than time_processed.")]
+    InvalidEpochDuration,
+    #[msg("Reward calculation overflowed.")]
+    RewardOverflow,
+    #[msg("No rewards available.")]
+    ZeroRewardsAvailable,
 }
 
 #[error_code]
