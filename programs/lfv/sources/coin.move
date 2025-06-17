@@ -33,6 +33,11 @@ fun init(witness: LFV, ctx: &mut TxContext) {
     transfer::public_transfer(metadata, tx_context::sender(ctx));
 }
 
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(LFV {}, ctx);
+}
+
 public entry fun mint(
     treasury: &mut TreasuryCap<LFV>,
     amount: u64,

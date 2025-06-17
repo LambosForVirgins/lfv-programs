@@ -1,4 +1,5 @@
-module lfv::membership_system;
+#[test_only]
+module lfv::membership_tests;
 
 use lfv::lfv::{Self, LFV};
 use std::vector;

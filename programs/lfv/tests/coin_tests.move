@@ -9,12 +9,12 @@ use sui::test_utils::assert_eq;
 #[test]
 fun test_lfv_coin_initialization() {
     let owner = @0x123;
-    let scenario = ts::begin(owner);
+    let mut scenario = ts::begin(owner);
 
     // Initialize the LFV token
     {
         ts::next_tx(&mut scenario, owner);
-        lfv::init(LFV {}, ts::ctx(&mut scenario));
+        lfv::init_for_testing(ts::ctx(&mut scenario));
     };
 
     // Verify treasury ownership and initial supply
@@ -34,18 +34,18 @@ fun test_lfv_coin_initialization() {
 fun test_lfv_coin_mint() {
     let owner = @0x123;
     let recipient = @0x456;
-    let scenario = ts::begin(owner);
+    let mut scenario = ts::begin(owner);
 
     // Initialize the LFV token
     {
         ts::next_tx(&mut scenario, owner);
-        lfv::init(LFV {}, ts::ctx(&mut scenario));
+        lfv::init_for_testing(ts::ctx(&mut scenario));
     };
 
     // Test minting
     {
         ts::next_tx(&mut scenario, owner);
-        let treasury = ts::take_from_sender<TreasuryCap<LFV>>(&scenario);
+        let mut treasury = ts::take_from_sender<TreasuryCap<LFV>>(&scenario);
         lfv::mint(&mut treasury, 1000, recipient, ts::ctx(&mut scenario));
         ts::return_to_sender(&scenario, treasury);
     };
