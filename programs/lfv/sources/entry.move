@@ -1,40 +1,44 @@
-module entry_token::entry;
+/// This Closed Loop Loyalty Token `$ENTRY` is sent to subscribed
+/// members as a reward for their bound loyalty. The `$ENTRY` token
+/// can be used to enter into an open `Draw` of a `Giveaway`.
+///
+/// Actions:
+/// - reward_member - reward a member with `$ENTRY` tokens
+/// - redeem_entry - redeem the `$ENTRY` token to enter into a `Draw`
+module lfv::entry;
 
-use sui::coin::{Self, TreasuryCap};
-use sui::token::{Self};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::token;
 
 public struct AuthorCapability has key { id: UID }
 
 // The one-time-witness (OTW) entry token
 public struct ENTRY has drop {}
 
-// This is the Rule requirement for the `GiveawayTickets`.
-public struct GiveawayTickets has drop {}
+// Rule requirement for rewarding member loyalty.
+public struct LoyaltyReward has drop {}
 
 public struct Ticket has key, store {
     id: UID,
 }
 
-/**
- * Create a new `ENTRY` token, create a `TokenPolicy` for it and
- * allow everyone to spend `Token's if they were reward`ed with
- * a `GiveawayTickets`.
- **/
+/// Create a new `$ENTRY` token with `LoyaltyReward` policy to allow
+/// holders to redeem for entries into a `Draw`.
 fun init(otw: ENTRY, ctx: &mut TxContext) {
     let (treasury_cap, coin_metadata) = coin::create_currency(
         otw,
-        0, // no decimals
-        b"ENTRY", // symbol
-        b"Giveaway Entry", // name
-        b"Giveaway Entry Member Reward Token", // description
-        option::none(), // url
+        0,
+        b"ENTRY",
+        b"Giveaway Entry",
+        b"Member Loyalty Tokens",
+        option::none(),
         ctx,
     );
 
     let (mut policy, policy_cap) = token::new_policy(&treasury_cap, ctx);
 
-    // Constrain the spend by this giveaway ticket
-    token::add_rule_for_action<ENTRY, GiveawayTickets>(
+    // Constrain the spend within this ecosystem
+    token::add_rule_for_action<ENTRY, LoyaltyReward>(
         &mut policy,
         &policy_cap,
         token::spend_action(),
@@ -71,3 +75,12 @@ public fun reward_bridged_trade(
     token::confirm_with_treasury_cap(cap, request, ctx);
 }
 
+/**
+ * Redeem the ENTRY token to enter into the giveaway.
+ **/
+public fun redeem_entry(
+    cap: &mut TreasuryCap<ENTRY>,
+    amount: u64,
+    recipient: address,
+    ctx: &mut TxContext,
+) {}

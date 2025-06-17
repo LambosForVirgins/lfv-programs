@@ -1,0 +1,13 @@
+---
+description: 
+globs: *.move
+alwaysApply: false
+---
+This rule provides references for Move documentation, ensuring an accurate source of information when generating Move code:
+
+When working in the sources directory:
+
+Always reference the official documentation at The Move Book (https://move-book.com/) for core language usage
+Always refereence the Move Reference (https://move-book.com/reference/) for architecture and syntax documentation.
+Reference the Sui documentation (https://docs.sui.io/concepts/sui-move-concepts) fro broader Sui concepts.
+Reference the Sui examples repository (https://github.com/MystenLabs/sui/tree/main/examples) for architectural ideas.

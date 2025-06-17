@@ -43,6 +43,24 @@ Unknown
 
 ## Getting Started
 
+### Running on Apple Silicon?
+
+Apple ships optional software called Rosetta 2 which translates x86_64 binaries to aarch64, either when loading the binary or dynamically at runtime. This allows Apple Silicon (M1, M2, M3, etc.) to run x86_64 binaries.
+
+In order to run the Solana toolset on a Apple Silicon based Mac, you will first need to install Rosetta.
+
+```shell
+softwareupdate --install-rosetta
+```
+
+Then follow the prompts to complete installation. You will also need to update the `Cargo.toml` or `.cargo/config.toml` files to specify the build target. Add the following line inside the config file of the project.
+
+```shell
+[build]
+target = "x86_64-apple-darwin"
+```
+
+
 ### Setup a local SUI environment and tools
 
 > [Sui setup documentation](https://docs.sui.io/guides/developer/getting-started)
@@ -86,4 +104,3 @@ If successful, the response resembles the following:
 ```
 
 Connect the Sui CLI to your local network
-

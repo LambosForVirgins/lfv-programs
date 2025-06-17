@@ -2,6 +2,10 @@
 members = [
     "programs/bridged_burn"
 ]
+resolver = "2"
+
+[build]
+target = "x86_64-apple-darwin"
 
 [profile.release]
 overflow-checks = true

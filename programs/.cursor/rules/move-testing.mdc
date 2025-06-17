@@ -1,0 +1,10 @@
+---
+description: 
+globs: *.move
+alwaysApply: false
+---
+This rule defines how test files should be writen for Move modules:
+
+When writing test scenarios for Move modules:
+
+Test file naming scheme always include the word `tests` or `scenarios` in the `tests` directory, and correspond to the file with the same name in the `sources` directory.

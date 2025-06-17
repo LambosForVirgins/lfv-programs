@@ -1,11 +1,11 @@
-module bridge::receiver;
+module lfv::bridge_receiver;
 
+use lfv::entry::reward_bridged_trade;
 use std::debug;
+use sui::bcs;
 use sui::clock::Clock;
-use entry_token::entry::{reward_bridged_trade};
 use wormhole::state::State;
 use wormhole::vaa::{Self, VAA};
-use sui::bcs;
 
 /// Receives a Wormhole VAA and mints an ENTRY token to the specified Sui address.
 ///
@@ -18,7 +18,7 @@ public entry fun receive_entry_token(
     wormhole_state: &State,
     clock: &Clock,
     vaa_bytes: vector<u8>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ) {
     // Parse and verify the VAA signatures against the guardian set
     let verified_vaa: VAA = vaa::parse_and_verify(wormhole_state, vaa_bytes, clock);

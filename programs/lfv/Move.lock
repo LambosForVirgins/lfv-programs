@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "DF59FCCFFD536855DCA8730413333FE280F98358A11B7718FFB465D53F166EB3"
+manifest_digest = "144E2571AC50723D53343BF056708C41753DE0782F3B181CFCDDD1497897E8B5"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -45,7 +45,7 @@ dependencies = [
 
 [[move.package]]
 id = "Wormhole"
-source = { git = "https://github.com/wormhole-foundation/wormhole", rev = "latest", subdir = "sui/wormhole" }
+source = { git = "https://github.com/wormhole-foundation/wormhole", rev = "v2.19.0", subdir = "sui/wormhole" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },

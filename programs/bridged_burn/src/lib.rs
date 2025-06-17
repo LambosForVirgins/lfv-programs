@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount, Mint, Burn, CloseAccount};
-use wormhole_sdk::post_message::{self, PostMessage};
+use wormhole_sdk::core::post_message;
 use solana_program::clock::Clock;
 
 declare_id!("4rGdLkQDuZcJhCM85wwcpcyM7t5GxtpjAapV2LR6buiK");
@@ -13,13 +13,11 @@ pub mod bridged_burn {
         ctx: Context<BurnAndClose>,
         sui_address: [u8; 32],
     ) -> Result<()> {
-        // Burn all tokens
+        // Validate token amount
         let burn_amount = ctx.accounts.token_account.amount;
-        if burn_amount == 0 {
-            return Err(ErrorCode::NothingToBurn.into());
-        }
-
-        let cpi_ctx = CpiContext::new(
+        require!(burn_amount > 0, ErrorCode::NothingToBurn);
+        // Burn all tokens
+        let burn_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             Burn {
                 mint: ctx.accounts.mint.to_account_info(),
@@ -27,10 +25,10 @@ pub mod bridged_burn {
                 authority: ctx.accounts.owner.to_account_info(),
             },
         );
-        anchor_spl::token::burn(cpi_ctx, burn_amount)?;
+        anchor_spl::token::burn(burn_ctx, burn_amount)?;
 
         // Close account, send lamports to vault
-        let cpi_ctx = CpiContext::new(
+        let close_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             CloseAccount {
                 account: ctx.accounts.token_account.to_account_info(),
@@ -38,11 +36,11 @@ pub mod bridged_burn {
                 authority: ctx.accounts.owner.to_account_info(),
             },
         );
-        anchor_spl::token::close_account(cpi_ctx)?;
+        anchor_spl::token::close_account(close_ctx)?;
 
         // Emit event
         emit!(BridgeBurnEvent {
-            sui_reciever: sui_address,
+            sui_receiver: sui_address,
             sol_sender: ctx.accounts.owner.key(),
             mint: ctx.accounts.mint.key(),
             amount: burn_amount,
@@ -57,7 +55,7 @@ pub mod bridged_burn {
         // CPI into Wormhole Core Bridge
         // This uses the `post_message` helper from `wormhole-sdk`
         let clock = Clock::get()?.unix_timestamp as u32;
-        let cpi_ctx = CpiContext::new(
+        let bridge_ctx = CpiContext::new(
             ctx.accounts.wormhole_program.to_account_info(),
             PostMessage {
                 payer:            ctx.accounts.owner.to_account_info(),
@@ -72,7 +70,7 @@ pub mod bridged_burn {
             },
         );
         // consistency_level = 0 for guaranteed-once delivery
-        post_message(cpi_ctx, payload, 0)?;
+        post_message(bridge_ctx, payload, 0)?;
 
         Ok(())
     }
@@ -91,6 +89,13 @@ pub struct BurnAndClose<'info> {
     pub emitter: UncheckedAccount<'info>,
     #[account(mut)]
     pub sequence: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub message: UncheckedAccount<'info>,
+    /// CHECK: collects Wormhole fees
+    #[account(mut)]
+    pub fee_collector: UncheckedAccount<'info>,
+
+
 
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -113,7 +118,7 @@ pub struct BurnAndClose<'info> {
 
 #[event]
 pub struct BridgeBurnEvent {
-    pub sui_reciever: [u8; 32],
+    pub sui_receiver: [u8; 32],
     pub sol_sender: Pubkey,
     pub mint: Pubkey,
     pub amount: u64,
