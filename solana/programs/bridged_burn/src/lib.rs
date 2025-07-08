@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Burn, CloseAccount};
-use solana_program::clock::Clock;
+use anchor_lang::solana_program::clock::Clock;
 use borsh::{BorshDeserialize, BorshSerialize};
 use error::*;
 use state::*;

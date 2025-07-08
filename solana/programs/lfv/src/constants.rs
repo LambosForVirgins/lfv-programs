@@ -1,4 +1,4 @@
-use solana_program::{pubkey, pubkey::Pubkey};
+use anchor_lang::solana_program::{pubkey, pubkey::Pubkey};
 
 pub const ANCHOR_DISCRIMINATOR_SIZE: usize = 8;
 

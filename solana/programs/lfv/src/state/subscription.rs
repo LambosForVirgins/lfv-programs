@@ -4,7 +4,7 @@ use crate::{
     constants::*, errors::TransferError, slots::Transaction, status::AccountStatus,
     tiers::MemberTier, utils::*,
 };
-use solana_program::program_pack::IsInitialized;
+use anchor_lang::solana_program::program_pack::IsInitialized;
 
 #[account]
 pub struct SubscriptionAccount {

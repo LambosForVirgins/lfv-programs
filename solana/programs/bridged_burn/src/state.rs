@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use solana_program::clock::Clock;
+use anchor_lang::solana_program::clock::Clock;
 use borsh::{BorshDeserialize, BorshSerialize};
 use crate::error::GovernanceErrorCode;
 

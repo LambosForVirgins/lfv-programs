@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction::*};
 use crate::{constants::*, errors::*};
-use solana_program::{program_pack::IsInitialized, pubkey};
+use anchor_lang::solana_program::{program_pack::IsInitialized, pubkey};
 
 #[account]
 pub struct HostAccount {

@@ -803,7 +803,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "borsh 0.10.4",
- "solana-program",
  "solana-program-test",
  "solana-sdk",
  "spl-token",

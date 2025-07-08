@@ -7,7 +7,7 @@ mod refund_tests {
     };
     use anchor_spl::token::spl_token;
     use spl_token::instruction as token_instruction;
-    use solana_program_test::*;
+    use anchor_lang::solana_program_test::*;
     use solana_sdk::{
         signature::{Keypair, Signer},
         transaction::Transaction,
