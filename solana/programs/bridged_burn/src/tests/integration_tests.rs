@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod integration_tests {
-    use super::*;
     use anchor_lang::prelude::*;
     use crate::{
         BurnConfirmationPayload, 

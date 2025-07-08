@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod bridge_tests {
-    use super::*;
     use anchor_lang::prelude::*;
     use crate::{
         BurnConfirmationPayload, 
@@ -8,8 +7,7 @@ mod bridge_tests {
         WormholeMessageEvent,
         BURN_CONFIRMATION_MESSAGE_TYPE,
         SUI_CHAIN_ID,
-        WORMHOLE_PROGRAM_ID,
-        error::BridgeErrorCode
+        WORMHOLE_PROGRAM_ID
     };
     use std::str::FromStr;
 

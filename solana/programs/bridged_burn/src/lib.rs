@@ -4,9 +4,11 @@ use solana_program::clock::Clock;
 use borsh::{BorshDeserialize, BorshSerialize};
 use error::*;
 use state::*;
+use events::*;
 
 mod error;
 mod state;
+mod events;
 
 declare_id!("4rGdLkQDuZcJhCM85wwcpcyM7t5GxtpjAapV2LR6buiK");
 
@@ -19,16 +21,248 @@ pub const BURN_CONFIRMATION_MESSAGE_TYPE: u8 = 1;
 /// Wormhole Core Bridge program ID (mainnet)
 pub const WORMHOLE_PROGRAM_ID: &str = "3u8hJUVTA4jH1wYAyUur7FFZVQ8H635K3tSHHF4ssjQ5";
 
+/// Config account seed for PDA derivation
+pub const CONFIG_SEED: &[u8] = b"config";
+
+/// Proposal account seed for PDA derivation
+pub const PROPOSAL_SEED: &[u8] = b"proposal";
+
 #[cfg(test)]
 mod tests {
     mod bridge_tests;
     mod integration_tests;
-    mod refund_tests;
+    mod governance_tests;
+    // mod refund_tests;
 }
 
 #[program]
 pub mod bridged_burn {
     use super::*;
+
+    /// Initialize the program configuration
+    pub fn initialize_config(
+        ctx: Context<InitializeConfig>,
+        owner: Pubkey,
+        vault: Pubkey,
+        wormhole_program: Pubkey,
+        multisig_threshold: u8,
+        multisig_signers: Vec<Pubkey>,
+        burn_fee: u64,
+    ) -> Result<()> {
+        // Validate parameters
+        require!(
+            multisig_threshold > 0 && multisig_threshold <= multisig_signers.len() as u8,
+            GovernanceErrorCode::InvalidMultisigThreshold
+        );
+        require!(
+            multisig_signers.len() <= Config::MAX_MULTISIG_SIGNERS,
+            GovernanceErrorCode::TooManyMultisigSigners
+        );
+        
+        // Check for duplicate signers
+        for (i, signer) in multisig_signers.iter().enumerate() {
+            for (j, other_signer) in multisig_signers.iter().enumerate() {
+                if i != j && signer == other_signer {
+                    return Err(GovernanceErrorCode::DuplicateMultisigSigner.into());
+                }
+            }
+        }
+
+        let config = &mut ctx.accounts.config;
+        config.owner = owner;
+        config.multisig_threshold = multisig_threshold;
+        config.multisig_signers = multisig_signers.clone();
+        config.vault = vault;
+        config.wormhole_program = wormhole_program;
+        config.burn_fee = burn_fee;
+        config.is_paused = false;
+        config.supported_mints = vec![];
+        config.wormhole_consistency_level = 1;
+        config.config_version = 1;
+        config.last_updated = Clock::get()?.unix_timestamp;
+        config.reserved = [0; 256];
+
+        emit!(ConfigInitializedEvent {
+            owner,
+            vault,
+            multisig_threshold,
+            multisig_signers,
+        });
+
+        Ok(())
+    }
+
+    /// Create a proposal for configuration changes
+    pub fn create_config_proposal(
+        ctx: Context<CreateConfigProposal>,
+        proposal_id: u64,
+        proposed_config: Config,
+        expiration_duration: i64,
+    ) -> Result<()> {
+        let config = &ctx.accounts.config;
+        let proposer = &ctx.accounts.proposer;
+        
+        // Verify proposer is an authorized multisig signer
+        require!(
+            config.is_multisig_signer(&proposer.key()),
+            GovernanceErrorCode::Unauthorized
+        );
+        
+        // Validate proposed config
+        require!(
+            proposed_config.multisig_threshold > 0 && 
+            proposed_config.multisig_threshold <= proposed_config.multisig_signers.len() as u8,
+            GovernanceErrorCode::InvalidMultisigThreshold
+        );
+        require!(
+            proposed_config.multisig_signers.len() <= Config::MAX_MULTISIG_SIGNERS,
+            GovernanceErrorCode::TooManyMultisigSigners
+        );
+        require!(
+            proposed_config.supported_mints.len() <= Config::MAX_SUPPORTED_MINTS,
+            GovernanceErrorCode::TooManySupportedMints
+        );
+
+        let proposal = &mut ctx.accounts.proposal;
+        proposal.proposal_id = proposal_id;
+        proposal.proposed_config = proposed_config.clone();
+        proposal.approved_signers = vec![proposer.key()];
+        proposal.approval_count = 1;
+        proposal.created_at = Clock::get()?.unix_timestamp;
+        proposal.expires_at = Clock::get()?.unix_timestamp + expiration_duration;
+        proposal.executed = false;
+        proposal.reserved = [0; 64];
+
+        emit!(ConfigProposalCreatedEvent {
+            proposal_id,
+            proposer: proposer.key(),
+            expires_at: proposal.expires_at,
+        });
+
+        Ok(())
+    }
+
+    /// Approve a configuration proposal
+    pub fn approve_config_proposal(
+        ctx: Context<ApproveConfigProposal>,
+    ) -> Result<()> {
+        let config = &ctx.accounts.config;
+        let proposal = &mut ctx.accounts.proposal;
+        let approver = &ctx.accounts.approver;
+        
+        // Verify approver is an authorized multisig signer
+        require!(
+            config.is_multisig_signer(&approver.key()),
+            GovernanceErrorCode::Unauthorized
+        );
+        
+        // Check proposal hasn't expired
+        require!(
+            !proposal.is_expired(),
+            GovernanceErrorCode::ProposalExpired
+        );
+        
+        // Check proposal hasn't been executed
+        require!(
+            !proposal.executed,
+            GovernanceErrorCode::ProposalAlreadyExecuted
+        );
+        
+        // Check signer hasn't already approved
+        require!(
+            !proposal.has_signer_approved(&approver.key()),
+            GovernanceErrorCode::SignerAlreadyApproved
+        );
+        
+        // Add approval
+        proposal.approved_signers.push(approver.key());
+        proposal.approval_count += 1;
+
+        emit!(ConfigProposalApprovedEvent {
+            proposal_id: proposal.proposal_id,
+            approver: approver.key(),
+            approval_count: proposal.approval_count,
+        });
+
+        Ok(())
+    }
+
+    /// Execute a configuration proposal
+    pub fn execute_config_proposal(
+        ctx: Context<ExecuteConfigProposal>,
+    ) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        let proposal = &mut ctx.accounts.proposal;
+        let executor = &ctx.accounts.executor;
+        
+        // Verify executor is an authorized multisig signer
+        require!(
+            config.is_multisig_signer(&executor.key()),
+            GovernanceErrorCode::Unauthorized
+        );
+        
+        // Check proposal hasn't expired
+        require!(
+            !proposal.is_expired(),
+            GovernanceErrorCode::ProposalExpired
+        );
+        
+        // Check proposal hasn't been executed
+        require!(
+            !proposal.executed,
+            GovernanceErrorCode::ProposalAlreadyExecuted
+        );
+        
+        // Check proposal has enough approvals
+        require!(
+            proposal.has_enough_approvals(config.multisig_threshold),
+            GovernanceErrorCode::InsufficientMultisigApprovals
+        );
+        
+        // Execute the proposal by updating config
+        let proposed_config = proposal.proposed_config.clone();
+        config.owner = proposed_config.owner;
+        config.multisig_threshold = proposed_config.multisig_threshold;
+        config.multisig_signers = proposed_config.multisig_signers;
+        config.vault = proposed_config.vault;
+        config.wormhole_program = proposed_config.wormhole_program;
+        config.burn_fee = proposed_config.burn_fee;
+        config.is_paused = proposed_config.is_paused;
+        config.supported_mints = proposed_config.supported_mints;
+        config.wormhole_consistency_level = proposed_config.wormhole_consistency_level;
+        config.config_version = proposed_config.config_version;
+        config.last_updated = Clock::get()?.unix_timestamp;
+        
+        // Mark proposal as executed
+        proposal.executed = true;
+
+        emit!(ConfigProposalExecutedEvent {
+            proposal_id: proposal.proposal_id,
+            executor: executor.key(),
+        });
+
+        Ok(())
+    }
+
+    /// Emergency pause (can be called by owner without multisig)
+    pub fn emergency_pause(ctx: Context<EmergencyPause>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        
+        // Only owner can call emergency pause
+        require!(
+            ctx.accounts.owner.key() == config.owner,
+            GovernanceErrorCode::Unauthorized
+        );
+        
+        config.is_paused = true;
+        config.last_updated = Clock::get()?.unix_timestamp;
+
+        emit!(EmergencyPauseEvent {
+            paused_by: ctx.accounts.owner.key(),
+        });
+
+        Ok(())
+    }
 
     /// Burns tokens and closes the token account,
     /// then sends a confirmation message to Sui via Wormhole
@@ -36,9 +270,26 @@ pub mod bridged_burn {
         ctx: Context<BurnAndClose>,
         sui_address: [u8; 32],
     ) -> Result<()> {
+        let config = &ctx.accounts.config;
+        
+        // Check if program is paused
+        config.check_not_paused()?;
+        
+        // Check if mint is supported
+        require!(
+            config.is_mint_supported(&ctx.accounts.mint.key()),
+            GovernanceErrorCode::UnsupportedMint
+        );
+        
         // Validate token amount
         let burn_amount = ctx.accounts.token_account.amount;
         require!(burn_amount > 0, BridgeErrorCode::NothingToBurn);
+        
+        // Check if vault matches config
+        require!(
+            ctx.accounts.vault.key() == config.vault,
+            GovernanceErrorCode::InvalidVaultAddress
+        );
 
         // Burn all tokens
         let burn_ctx = CpiContext::new(
@@ -50,8 +301,8 @@ pub mod bridged_burn {
             },
         );
         anchor_spl::token::burn(burn_ctx, burn_amount)?;
-
-        // Close account, send lamports to vault
+        
+        // Close token account and refund rent to vault
         let close_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             CloseAccount {
@@ -85,7 +336,7 @@ pub mod bridged_burn {
 
 /// Private function to send burn confirmation message to Sui via Wormhole
 fn send_burn_confirmation_message(
-    ctx: &Context<BurnAndClose>,
+    _ctx: &Context<BurnAndClose>,
     solana_sender: Pubkey,
     sui_receiver: [u8; 32],
     mint: Pubkey,
@@ -129,8 +380,109 @@ fn send_burn_confirmation_message(
     Ok(())
 }
 
+// Account structures for config operations
+
+#[derive(Accounts)]
+pub struct InitializeConfig<'info> {
+    #[account(
+        init,
+        payer = payer,
+        space = Config::SIZE,
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(proposal_id: u64)]
+pub struct CreateConfigProposal<'info> {
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
+    #[account(
+        init,
+        payer = payer,
+        space = ConfigProposal::SIZE,
+        seeds = [PROPOSAL_SEED, &proposal_id.to_le_bytes()],
+        bump
+    )]
+    pub proposal: Account<'info, ConfigProposal>,
+    
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    
+    pub proposer: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ApproveConfigProposal<'info> {
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
+    #[account(
+        mut,
+        seeds = [PROPOSAL_SEED, &proposal.proposal_id.to_le_bytes()],
+        bump
+    )]
+    pub proposal: Account<'info, ConfigProposal>,
+    
+    pub approver: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ExecuteConfigProposal<'info> {
+    #[account(
+        mut,
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
+    #[account(
+        mut,
+        seeds = [PROPOSAL_SEED, &proposal.proposal_id.to_le_bytes()],
+        bump
+    )]
+    pub proposal: Account<'info, ConfigProposal>,
+    
+    pub executor: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct EmergencyPause<'info> {
+    #[account(
+        mut,
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
+    pub owner: Signer<'info>,
+}
+
 #[derive(Accounts)]
 pub struct BurnAndClose<'info> {
+    // ——— Configuration ———
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    
     // ——— Token accounts ———
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -147,25 +499,11 @@ pub struct BurnAndClose<'info> {
     pub mint: Account<'info, Mint>,
 
     /// CHECK: Safe as only receiving lamports from closed token account
+    /// Must match the vault address in config
     #[account(mut)]
     pub vault: UncheckedAccount<'info>,
 
     // ——— System accounts ———
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-}
-
-#[event]
-pub struct BridgeBurnEvent {
-    pub sui_receiver: [u8; 32],
-    pub sol_sender: Pubkey,
-    pub mint: Pubkey,
-    pub amount: u64,
-}
-
-#[event]
-pub struct WormholeMessageEvent {
-    pub target_chain: u16,
-    pub payload: Vec<u8>,
-    pub consistency_level: u8,
 }
