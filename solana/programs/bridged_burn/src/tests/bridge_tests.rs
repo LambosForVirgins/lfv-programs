@@ -2,9 +2,7 @@
 mod bridge_tests {
     use anchor_lang::prelude::*;
     use crate::{
-        BurnConfirmationPayload, 
-        BridgeBurnEvent, 
-        WormholeMessageEvent,
+        BurnConfirmationPayload,
         BURN_CONFIRMATION_MESSAGE_TYPE,
         SUI_CHAIN_ID,
         WORMHOLE_PROGRAM_ID
