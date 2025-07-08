@@ -1,4 +1,4 @@
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
 import { MINT_ADDRESS, program } from "../../client/constants";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import {

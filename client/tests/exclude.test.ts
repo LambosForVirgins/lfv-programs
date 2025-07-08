@@ -3,9 +3,9 @@ import BN from "bn.js";
 import assert from "assert";
 import * as web3 from "@solana/web3.js";
 import spl from "@solana/spl-token";
-import { program } from "../client/constants";
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
-import { assertErrorAsync, mintTokenToAccount } from "@/testing/utils";
+import { program } from "../constants";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
+import { assertErrorAsync, mintTokenToAccount } from "~/testing/utils";
 const DECIMALS = 9;
 const AMOUNT = 100;
 

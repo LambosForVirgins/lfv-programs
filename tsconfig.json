@@ -17,7 +17,7 @@
       "vitest/globals"
     ],
     "paths": {
-      "@/*": [
+      "~/*": [
         "./packages/*"
       ]
     },

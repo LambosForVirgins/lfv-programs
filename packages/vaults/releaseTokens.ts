@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { MINT_ADDRESS, program } from "../../client/constants";
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,

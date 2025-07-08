@@ -3,8 +3,8 @@ import BN from "bn.js";
 import assert from "assert";
 import * as web3 from "@solana/web3.js";
 import spl from "@solana/spl-token";
-import { program } from "../client/constants";
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
+import { program } from "../constants";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
 const DECIMALS = 9;
 const AMOUNT = 100;
 

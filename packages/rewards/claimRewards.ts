@@ -4,7 +4,7 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { findSubscriptionAccountAddress } from "@/pda";
+import { findSubscriptionAccountAddress } from "~/pda";
 
 export const claimRewards = async (connection: Connection, signer: Keypair) => {
   try {

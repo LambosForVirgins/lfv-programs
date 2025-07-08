@@ -1,8 +1,8 @@
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import { MINT_ADDRESS, program } from "../../client/constants";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Logger } from "@/tools/Logger";
+import { Logger } from "~/tools/Logger";
 
 export const initializeSubscriptionAccount = async (signer: Keypair) => {
   try {

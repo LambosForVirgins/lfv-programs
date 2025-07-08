@@ -1,4 +1,4 @@
-import { findDrawAccount, findTicketAccountAddress } from "@/pda";
+import { findDrawAccount, findTicketAccountAddress } from "~/pda";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,

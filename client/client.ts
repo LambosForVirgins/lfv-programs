@@ -7,15 +7,15 @@ import {
   findRewardTokenMintAddress,
   findVaultAccountAddress,
   findMetaplexAddress,
-} from "@/pda";
-import { loadKeypairFileSync, sleep } from "@/testing/utils";
-import { initializeSubscriptionAccount } from "@/subscriptions";
-import { claimRewards } from "@/rewards";
-import { depositTokens } from "@/vaults/depositTokens";
-import { enterDraw } from "@/giveaways/enterDraw";
-import { fundMemberWallet } from "@/tools/fundMemberWallet";
-import { isMintInitialized } from "@/tools/isMintInitialized";
-import { Logger } from "@/tools/Logger";
+} from "~/pda";
+import { loadKeypairFileSync, sleep } from "~/testing/utils";
+import { initializeSubscriptionAccount } from "~/subscriptions";
+import { claimRewards } from "~/rewards";
+import { depositTokens } from "~/vaults/depositTokens";
+import { enterDraw } from "~/giveaways/enterDraw";
+import { fundMemberWallet } from "~/tools/fundMemberWallet";
+import { isMintInitialized } from "~/tools/isMintInitialized";
+import { Logger } from "~/tools/Logger";
 
 // Globals
 const MINT_BALANCE = 15_050_542;

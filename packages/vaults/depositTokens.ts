@@ -1,12 +1,12 @@
 import BN from "bn.js";
 import { MINT_ADDRESS, MINT_DECIMALS, program } from "../../client/constants";
-import { findSubscriptionAccountAddress, findVaultAccountAddress } from "@/pda";
+import { findSubscriptionAccountAddress, findVaultAccountAddress } from "~/pda";
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { Logger } from "@/tools/Logger";
+import { Logger } from "~/tools/Logger";
 
 export const depositTokens = async (amount: number, signer: Keypair) => {
   const decimalFactor = new BN(Math.pow(10, 9));

@@ -10,12 +10,12 @@ export default defineWorkspace([
       name: "packages",
       environment: "node",
       globals: true,
-      setupFiles: "./setup.ts",
+      setupFiles: "./scripts/vitest.setup.ts",
       css: false,
     },
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./"),
+        "~": path.resolve(__dirname, "./"),
       },
     },
   },

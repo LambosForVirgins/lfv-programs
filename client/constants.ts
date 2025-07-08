@@ -2,7 +2,7 @@ import { RewardProgram } from "../target/types/reward_program";
 import IDL from "../target/idl/reward_program.json";
 import { PublicKey, Connection } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
-import { loadKeypairFileSync } from "@/testing/utils";
+import { loadKeypairFileSync } from "~/testing/utils";
 
 export const appWallet = loadKeypairFileSync(
   "./keys/APP1udKK1p1G7eE3PeTHp5qo8FDTAzmxC5buW7Luss3B.json"

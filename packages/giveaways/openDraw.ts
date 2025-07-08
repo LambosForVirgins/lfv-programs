@@ -1,4 +1,4 @@
-import { findDrawAccount } from "@/pda";
+import { findDrawAccount } from "~/pda";
 import { program } from "../../client/constants";
 import BN from "bn.js";
 import { Connection, Keypair, SystemProgram } from "@solana/web3.js";
