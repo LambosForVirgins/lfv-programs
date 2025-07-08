@@ -23,6 +23,7 @@ pub const WORMHOLE_PROGRAM_ID: &str = "3u8hJUVTA4jH1wYAyUur7FFZVQ8H635K3tSHHF4ss
 mod tests {
     mod bridge_tests;
     mod integration_tests;
+    mod refund_tests;
 }
 
 #[program]

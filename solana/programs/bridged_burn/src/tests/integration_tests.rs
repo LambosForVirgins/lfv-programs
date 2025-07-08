@@ -97,8 +97,6 @@ mod integration_tests {
         // Vault should receive this amount when token account is closed
         let initial_vault_balance = 1_000_000u64; // 0.001 SOL
         let expected_final_balance = initial_vault_balance + estimated_token_account_rent;
-
-        // TODO: Add test for rent being refunded to the vault
         
         assert!(expected_final_balance > initial_vault_balance, 
                 "Vault balance should increase after receiving rent refund");
