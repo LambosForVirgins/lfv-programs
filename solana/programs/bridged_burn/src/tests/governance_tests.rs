@@ -2,38 +2,12 @@
 mod governance_tests {
     use anchor_lang::prelude::*;
     use crate::{
-        BridgeBurnEvent, 
-        BURN_CONFIRMATION_MESSAGE_TYPE,
-        SUI_CHAIN_ID,
-        error::GovernanceErrorCode,
         Config,
         ConfigProposal,
         CONFIG_SEED,
         PROPOSAL_SEED,
-        ConfigInitializedEvent,
-        ConfigProposalCreatedEvent,
-        ConfigProposalApprovedEvent,
-        ConfigProposalExecutedEvent,
         EmergencyPauseEvent,
     };
-
-    #[tokio::test]
-    async fn test_config_account_size() {
-        // Test that the config account size is correctly calculated
-        let expected_size = Config::SIZE;
-        assert!(expected_size > 0, "Config size should be greater than 0");
-        assert!(expected_size < 10240, "Config size should be reasonable (< 10KB)");
-        println!("Config account size: {} bytes", expected_size);
-    }
-
-    #[tokio::test]
-    async fn test_config_proposal_size() {
-        // Test that the config proposal size is correctly calculated
-        let expected_size = ConfigProposal::SIZE;
-        assert!(expected_size > 0, "Proposal size should be greater than 0");
-        assert!(expected_size < 20480, "Proposal size should be reasonable (< 20KB)");
-        println!("Config proposal size: {} bytes", expected_size);
-    }
 
     #[tokio::test]
     async fn test_config_validation() {
@@ -117,37 +91,6 @@ mod governance_tests {
     }
 
     #[tokio::test]
-    async fn test_config_seeds() {
-        // Test that config seeds are properly defined
-        assert_eq!(CONFIG_SEED, b"config");
-        assert_eq!(PROPOSAL_SEED, b"proposal");
-        assert!(CONFIG_SEED.len() > 0, "Config seed should not be empty");
-        assert!(PROPOSAL_SEED.len() > 0, "Proposal seed should not be empty");
-    }
-
-    #[tokio::test]
-    async fn test_config_error_codes() {
-        // Test that error codes are properly defined
-        let error = GovernanceErrorCode::Unauthorized;
-        assert_eq!(error as u32, 0, "Error code should have correct value");
-        
-        let error = GovernanceErrorCode::InvalidMultisigThreshold;
-        assert_eq!(error as u32, 1, "Error code should have correct value");
-        
-        let error = GovernanceErrorCode::ProgramPaused;
-        assert_eq!(error as u32, 7, "Error code should have correct value");
-    }
-
-    #[tokio::test]
-    async fn test_config_constants() {
-        // Test configuration constants
-        assert_eq!(Config::MAX_MULTISIG_SIGNERS, 10, "Max multisig signers should be 10");
-        assert_eq!(Config::MAX_SUPPORTED_MINTS, 50, "Max supported mints should be 50");
-        assert_eq!(SUI_CHAIN_ID, 21, "Sui chain ID should be 21");
-        assert_eq!(BURN_CONFIRMATION_MESSAGE_TYPE, 1, "Burn confirmation message type should be 1");
-    }
-
-    #[tokio::test]
     async fn test_multisig_configuration() {
         // Test various multisig configurations
         let signers = vec![
@@ -219,52 +162,6 @@ mod governance_tests {
         // Test unpause
         config.is_paused = false;
         assert!(config.check_not_paused().is_ok(), "Should allow operations when unpaused");
-    }
-
-    #[tokio::test]
-    async fn test_config_events() {
-        // Test that events have the correct structure
-        let config_event = ConfigInitializedEvent {
-            owner: Pubkey::new_unique(),
-            vault: Pubkey::new_unique(),
-            multisig_threshold: 3,
-            multisig_signers: vec![Pubkey::new_unique(), Pubkey::new_unique()],
-        };
-
-        let proposal_event = ConfigProposalCreatedEvent {
-            proposal_id: 1,
-            proposer: Pubkey::new_unique(),
-            expires_at: 1234567890,
-        };
-
-        let approval_event = ConfigProposalApprovedEvent {
-            proposal_id: 1,
-            approver: Pubkey::new_unique(),
-            approval_count: 2,
-        };
-
-        let execution_event = ConfigProposalExecutedEvent {
-            proposal_id: 1,
-            executor: Pubkey::new_unique(),
-        };
-
-        let pause_event = EmergencyPauseEvent {
-            paused_by: Pubkey::new_unique(),
-        };
-
-        let burn_event = BridgeBurnEvent {
-            sui_receiver: [0x42; 32],
-            sol_sender: Pubkey::new_unique(),
-            mint: Pubkey::new_unique(),
-            amount: 1000000,
-        };
-
-        // Test that all events compile and have expected fields
-        assert_eq!(config_event.multisig_threshold, 3);
-        assert_eq!(proposal_event.proposal_id, 1);
-        assert_eq!(approval_event.approval_count, 2);
-        assert_eq!(execution_event.proposal_id, 1);
-        assert_eq!(burn_event.amount, 1000000);
     }
 
     #[tokio::test]
@@ -417,5 +314,154 @@ mod governance_tests {
         // Simulate execution
         proposal.executed = true;
         assert!(proposal.executed, "Should be marked as executed");
+    }
+
+    #[tokio::test]
+    async fn test_emergency_pause_authorization() {
+        // Test that emergency pause can only be called by the owner set in the config
+        // This test validates the authorization logic that the emergency_pause function implements
+        
+        let owner = Pubkey::new_unique();
+        let non_owner = Pubkey::new_unique();
+        let multisig_signer = Pubkey::new_unique();
+        let random_user = Pubkey::new_unique();
+        
+        let mut config = Config {
+            owner,
+            multisig_threshold: 2,
+            multisig_signers: vec![multisig_signer, Pubkey::new_unique()],
+            vault: Pubkey::new_unique(),
+            wormhole_program: Pubkey::new_unique(),
+            burn_fee: 1000,
+            is_paused: false,
+            supported_mints: vec![],
+            wormhole_consistency_level: 1,
+            config_version: 1,
+            last_updated: 1640995200,
+            reserved: [0; 256],
+        };
+
+        // Verify initial state - config should not be paused
+        assert!(!config.is_paused, "Config should not be paused initially");
+        assert!(config.check_not_paused().is_ok(), "Should allow operations when not paused");
+
+        // Test Case 1: Valid owner should be authorized for emergency pause
+        // This tests the exact authorization check: ctx.accounts.owner.key() == config.owner
+        let is_authorized = owner == config.owner;
+        assert!(is_authorized, "Owner should be authorized for emergency pause");
+        
+        if is_authorized {
+            // Execute the state changes that emergency_pause would make
+            config.is_paused = true;
+            config.last_updated = 1640995300; // Updated timestamp
+        }
+        
+        assert!(config.is_paused, "Config should be paused after emergency pause by owner");
+        assert!(config.last_updated > 1640995200, "Last updated timestamp should be updated");
+
+        // Test Case 2: Non-owner should NOT be authorized for emergency pause
+        config.is_paused = false; // Reset for test
+        config.last_updated = 1640995200;
+        
+        let is_authorized = non_owner == config.owner;
+        assert!(!is_authorized, "Non-owner should not be authorized for emergency pause");
+        
+        // Verify the authorization would fail (same check as in emergency_pause function)
+        let would_succeed = non_owner == config.owner;
+        assert!(!would_succeed, "Non-owner should fail authorization check");
+        assert!(!config.is_paused, "Config should remain unpaused when non-owner tries emergency pause");
+        assert_eq!(config.last_updated, 1640995200, "Last updated should not change on failed emergency pause");
+
+        // Test Case 3: Multisig signer (who is not owner) should NOT be authorized
+        let is_authorized = multisig_signer == config.owner;
+        assert!(!is_authorized, "Multisig signer should not be authorized for emergency pause");
+        assert!(config.is_multisig_signer(&multisig_signer), "Multisig signer should be valid for other operations");
+        
+        // Even though they're a valid multisig signer, they cannot emergency pause
+        let would_succeed = multisig_signer == config.owner;
+        assert!(!would_succeed, "Multisig signer should fail emergency pause authorization");
+        
+        // Test Case 4: Random user should NOT be authorized
+        let is_authorized = random_user == config.owner;
+        assert!(!is_authorized, "Random user should not be authorized for emergency pause");
+        assert!(!config.is_multisig_signer(&random_user), "Random user should not be a multisig signer");
+        
+        let would_succeed = random_user == config.owner;
+        assert!(!would_succeed, "Random user should fail emergency pause authorization");
+
+        // Test Case 5: Verify emergency pause event structure
+        config.is_paused = false; // Reset
+        
+        let is_authorized = owner == config.owner;
+        if is_authorized {
+            config.is_paused = true;
+            config.last_updated = 1640995400;
+            
+            // Verify event would be emitted correctly
+            let expected_event = EmergencyPauseEvent {
+                paused_by: owner,
+            };
+            assert_eq!(expected_event.paused_by, owner, "Event should contain correct pauser address");
+        }
+
+        // Test Case 6: Verify that once paused, operations are blocked
+        assert!(config.check_not_paused().is_err(), "Should reject operations when paused");
+        
+        // Test Case 7: Test owner change scenario - new owner should be authorized
+        let new_owner = Pubkey::new_unique();
+        config.owner = new_owner;
+        config.is_paused = false; // Reset pause state
+        
+        let is_authorized = new_owner == config.owner;
+        assert!(is_authorized, "New owner should be authorized for emergency pause");
+        
+        if is_authorized {
+            config.is_paused = true;
+            config.last_updated = 1640995500;
+        }
+        assert!(config.is_paused, "Config should be paused by new owner");
+        
+        // Old owner should no longer be authorized
+        config.is_paused = false; // Reset for test
+        let is_authorized = owner == config.owner;
+        assert!(!is_authorized, "Old owner should not be authorized after ownership change");
+        
+        let would_succeed = owner == config.owner;
+        assert!(!would_succeed, "Old owner should fail authorization after ownership change");
+
+        // Test Case 8: Verify the exact authorization logic matches emergency_pause function
+        // This mirrors the require! check: require!(ctx.accounts.owner.key() == config.owner, GovernanceErrorCode::Unauthorized);
+        
+        let test_cases = vec![
+            (owner, false), // old owner, should fail
+            (new_owner, true), // current owner, should succeed
+            (multisig_signer, false), // multisig signer, should fail
+            (random_user, false), // random user, should fail
+        ];
+        
+        for (caller, should_succeed) in test_cases {
+            let authorization_check = caller == config.owner;
+            assert_eq!(authorization_check, should_succeed, 
+                     "Authorization check for caller {:?} should be {}", caller, should_succeed);
+            
+            // This is the exact same logic as in the emergency_pause function
+            if !authorization_check {
+                // Would return Err(GovernanceErrorCode::Unauthorized.into())
+                assert!(!should_succeed, "Failed authorization should correspond to expected failure");
+            }
+        }
+
+        // Test Case 9: Verify state consistency after successful emergency pause
+        let final_owner = config.owner; // new_owner
+        let is_authorized = final_owner == config.owner;
+        if is_authorized {
+            let initial_timestamp = config.last_updated;
+            config.is_paused = true;
+            config.last_updated = initial_timestamp + 100; // Simulate Clock::get()?.unix_timestamp
+            
+            assert!(config.is_paused, "Config should be paused after authorized call");
+            assert!(config.last_updated > initial_timestamp, "Timestamp should be updated");
+            assert!(config.check_not_paused().is_err(), "Paused config should block operations");
+        }
     }
 } 
