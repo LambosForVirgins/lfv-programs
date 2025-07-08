@@ -1,4 +1,4 @@
-import { getEntryTokenPrice } from "./getEntryTokenPrice";
+import { getExchangedRewardValue } from "./getExchangedRewardValue";
 
 /**
  * Calculates the dynamic fair price of a security token
@@ -17,7 +17,7 @@ export const getDynamicTokenValuation = (
 ): number => {
   if (totalSupply === 0) return NaN;
 
-  const entryValue = getEntryTokenPrice(solPrice);
+  const entryValue = getExchangedRewardValue(solPrice);
   const percentStaked = stakedTokens / totalSupply;
 
   // Value increases as fewer tokens are staked (scarcity premium)

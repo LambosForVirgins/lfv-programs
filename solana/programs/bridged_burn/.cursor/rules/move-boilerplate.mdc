@@ -1,0 +1,8 @@
+---
+alwaysApply: false
+---
+This rule provides references for Wormhole Solana documentation and examples, ensuring an accurate source of information when generating code to interact with Wormhole network:
+
+When working within this directory:
+
+Always reference the integration examples in the Wormhole Scaffolding repo (https://github.com/wormhole-foundation/wormhole-scaffolding/tree/main/solana) for implementation examples.

@@ -1,16 +1,16 @@
 /**
  * Calculates the fair market capitalization of a token.
  *
- * @param tokenPriceUSD - Price of one token in USD
+ * @param tokenPrice - Price of one token
  * @param totalSupply - Total token supply (including circulating or max supply)
- * @returns Market capitalization in USD
+ * @returns Market capitalization
  */
 export function getFairMarketCap(
-  tokenPriceUSD: number,
+  tokenPrice: number,
   totalSupply: number
 ): number {
-  if (tokenPriceUSD < 0) throw new Error("Token price cannot be negative");
+  if (tokenPrice < 0) throw new Error("Token price cannot be negative");
   if (totalSupply < 0) throw new Error("Total supply cannot be negative");
 
-  return tokenPriceUSD * totalSupply;
+  return tokenPrice * totalSupply;
 }

@@ -7,7 +7,7 @@
 /// - redeem_entry - redeem the `$ENTRY` token to enter into a `Draw`
 module lfv::entry;
 
-use sui::coin::{Self, Coin, TreasuryCap};
+use sui::coin::{Self, TreasuryCap};
 use sui::token;
 
 public struct AuthorCapability has key { id: UID }
@@ -52,6 +52,11 @@ fun init(otw: ENTRY, ctx: &mut TxContext) {
     transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
 }
 
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ENTRY {}, ctx);
+}
+
 public fun reward_member(
     cap: &mut TreasuryCap<ENTRY>,
     amount: u64,
@@ -79,8 +84,8 @@ public fun reward_bridged_trade(
  * Redeem the ENTRY token to enter into the giveaway.
  **/
 public fun redeem_entry(
-    cap: &mut TreasuryCap<ENTRY>,
-    amount: u64,
-    recipient: address,
-    ctx: &mut TxContext,
+    _cap: &mut TreasuryCap<ENTRY>,
+    _amount: u64,
+    _recipient: address,
+    _ctx: &mut TxContext,
 ) {}

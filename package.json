@@ -3,7 +3,7 @@
     "version": "1.0.1",
     "private": true,
     "engines": {
-        "node": "20.x"
+        "node": ">=22.0.0"
     },
     "packageManager": "yarn@4.9.1",
     "scripts": {
@@ -34,6 +34,7 @@
         "@coral-xyz/anchor": "0.31.0",
         "@types/bn.js": "^5.1.1",
         "@types/node": "^22.10.10",
+        "@wormhole-foundation/sdk": "^2.1.0",
         "colorts": "^0.1.63",
         "commander": "^13.1.0",
         "dotenv": "^16.4.7",

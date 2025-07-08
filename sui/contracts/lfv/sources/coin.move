@@ -1,10 +1,7 @@
 module lfv::lfv;
 
-use std::option;
 use std::string;
 use sui::coin::{Self, TreasuryCap};
-use sui::transfer;
-use sui::tx_context::{Self, TxContext};
 use sui::url;
 
 public struct LFV has drop {}

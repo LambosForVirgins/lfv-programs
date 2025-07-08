@@ -1,4 +1,4 @@
-import { getEntryTokenPrice } from "./getEntryTokenPrice";
+import { getExchangedRewardValue } from "./getExchangedRewardValue";
 
 /**
  * Calculates the fair price of a security token that can be staked to earn ENTRY tokens.
@@ -11,6 +11,6 @@ export const getSecurityTokenFairPrice = (
   tokensPerEntry = 1000,
   reclaimedSolPerEntry = 0.00203928
 ): number => {
-  const entryValue = getEntryTokenPrice(solPrice, reclaimedSolPerEntry);
+  const entryValue = getExchangedRewardValue(solPrice, reclaimedSolPerEntry);
   return entryValue / tokensPerEntry;
 };

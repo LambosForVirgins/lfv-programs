@@ -104,3 +104,13 @@ If successful, the response resembles the following:
 ```
 
 Connect the Sui CLI to your local network
+
+### Setup Worm CLI
+
+First, check out the [Wormhole repo](https://github.com/wormhole-foundation/wormhole), then install the CLI tool by running:
+
+```shell
+wormhole/clients/js $ make install
+```
+
+`worm` is the swiss army knife for interacting with wormhole contracts on all supported chains, verifying payloads, and generating VAAs. [Head to Cli docs](https://docs.wormhole.com/wormhole/reference/cli-docs) to learn more.

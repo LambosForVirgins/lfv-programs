@@ -1,11 +1,7 @@
 module lfv::membership_system;
 
-use lfv::lfv::{Self, LFV};
-use std::vector;
+use lfv::lfv::LFV;
 use sui::coin::{Self, Coin};
-use sui::object::{Self, UID};
-use sui::transfer;
-use sui::tx_context;
 
 const BRONZE_THRESHOLD: u64 = 1000;
 const SILVER_THRESHOLD: u64 = 5000;
